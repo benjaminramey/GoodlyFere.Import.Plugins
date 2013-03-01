@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodlyFere.Import.Ektron", "GoodlyFere.Import.Ektron.csproj", "{D643E59E-6BF1-4708-AC59-98651A7BCE33}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{EF463F3B-3925-47DD-8655-D0FEE80D2CD9}"
 	ProjectSection(SolutionItems) = preProject
-		GoodlyFere.Import.Ektron.nuspec = GoodlyFere.Import.Ektron.nuspec
+		GoodlyFere.Import.Ektron\GoodlyFere.Import.Ektron.nuspec = GoodlyFere.Import.Ektron\GoodlyFere.Import.Ektron.nuspec
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
 	EndProjectSection
@@ -17,6 +15,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{D5AC34
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodlyFere.Import.Ektron", "GoodlyFere.Import.Ektron\GoodlyFere.Import.Ektron.csproj", "{D643E59E-6BF1-4708-AC59-98651A7BCE33}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodlyFere.Import.Ektron.Tests", "GoodlyFere.Import.Ektron.Tests\GoodlyFere.Import.Ektron.Tests.csproj", "{7CBD541F-C3DB-4A1C-8B10-2745C028391F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D643E59E-6BF1-4708-AC59-98651A7BCE33}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D643E59E-6BF1-4708-AC59-98651A7BCE33}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D643E59E-6BF1-4708-AC59-98651A7BCE33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CBD541F-C3DB-4A1C-8B10-2745C028391F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CBD541F-C3DB-4A1C-8B10-2745C028391F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CBD541F-C3DB-4A1C-8B10-2745C028391F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CBD541F-C3DB-4A1C-8B10-2745C028391F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
