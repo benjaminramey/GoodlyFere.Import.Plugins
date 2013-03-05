@@ -78,6 +78,7 @@
       <HintPath>..\lib\Microsoft.Practices.Unity.Interception.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -86,15 +87,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ContentRowComparer.cs" />
+    <Compile Include="Destination\ContentDestination.cs" />
+    <Compile Include="Destination\SmartFormDestination.cs" />
+    <Compile Include="Extensions\ContentDataRowExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="Destination\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="EktronConfig\ektron.cms.framework.ui.config" />
-    <None Include="EktronConfig\ektron.cms.framework.ui.unity.config" />
-    <None Include="EktronConfig\ektron.cms.framework.unity.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
