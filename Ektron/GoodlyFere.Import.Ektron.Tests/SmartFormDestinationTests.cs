@@ -78,6 +78,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             table.Columns.Add(new DataColumn("folderName", typeof(string)));
             table.Columns.Add(new DataColumn("html", typeof(string)));
             table.Columns.Add(new DataColumn("title", typeof(string)));
+            table.Columns.Add(new DataColumn("contentId", typeof(long)));
             table.Columns.Add(new DataColumn("smartFormId", typeof(long)));
             return table;
         }
@@ -99,6 +100,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             row["folderName"] = _expectedFolderName;
             row["title"] = "title";
             row["smartFormId"] = 39;
+            row["contentId"] = 0;
             table.Rows.Add(row);
             return table;
         }

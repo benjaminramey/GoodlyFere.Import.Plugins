@@ -194,7 +194,10 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             if (row.IsNew())
             {
-                return null;
+                string title = row["title"].ToString();
+                string folderName = row["folderName"].ToString();
+
+                return existingItems.FirstOrDefault(ei => ei.Title == title && ei.FolderName == folderName);
             }
 
             long id = (long)row["contentId"];
@@ -204,11 +207,19 @@ namespace GoodlyFere.Import.Ektron.Destination
         private static Expression GetExistingContentSearchExpression(DataTable data)
         {
             Queue<Expression> expressions = new Queue<Expression>();
-            foreach (DataRow row in data.Rows.Cast<DataRow>()
-                .Where(dr => dr["contentId"] != DBNull.Value && ((long)dr["contentId"]) > 0))
+
+            foreach (DataRow row in data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()))
             {
                 Expression idEqual = SearchContentProperty.Id.EqualTo((long)row["contentId"]);
                 expressions.Enqueue(idEqual);
+            }
+
+            foreach (DataRow row in data.Rows.Cast<DataRow>().Where(dr => dr.IsNew()))
+            {
+                Expression and = new AndExpression(
+                    SearchContentProperty.Title == row["title"].ToString(),
+                    SearchContentProperty.FolderName == row["folderName"].ToString());
+                expressions.Enqueue(and);
             }
 
             return RollUpExpressions(expressions);

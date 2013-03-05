@@ -130,11 +130,14 @@ namespace GoodlyFere.Import.Ektron.Tests
             var table = GetValidTable();
 
             destination.Receive(table);
-            DataRow row = table.Rows[0];
-            row["html"] = "this ithe updated html!!!";
-            destination.Receive(table);
-
             var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
+
+            DataRow row = table.Rows[0];
+            row["contentId"] = contentItem.Id;
+            row["html"] = "this is the updated html!!!";
+
+            destination.Receive(table);
+            contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
 
             Assert.Equal(row["title"].ToString(), contentItem.Title);
             Assert.Equal(row["folderName"].ToString(), contentItem.FolderName);
