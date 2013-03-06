@@ -155,6 +155,7 @@
   <ItemGroup>
     <Compile Include="ContentDestinationTests.cs" />
     <Compile Include="EktronTestHelper.cs" />
+    <Compile Include="MetadataDestinationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SmartFormDestinationTests.cs" />
   </ItemGroup>

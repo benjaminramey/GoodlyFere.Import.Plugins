@@ -1,7 +1,6 @@
 ﻿#region Usings
 
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Linq;
 using System;
@@ -9,23 +8,18 @@ using Common.Logging;
 using Ektron.Cms;
 using Ektron.Cms.Common;
 using Ektron.Cms.Content;
-using Ektron.Cms.Framework.Content;
 using Ektron.Cms.Framework.Organization;
-using Ektron.Cms.Framework.User;
-using Ektron.Cms.Search;
-using Ektron.Cms.Search.Expressions;
 using GoodlyFere.Import.Ektron.Extensions;
-using GoodlyFere.Import.Interfaces;
+using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
 
 namespace GoodlyFere.Import.Ektron.Destination
 {
-    public class ContentDestination : IDestination
+    public class ContentDestination : DestinationBase
     {
         #region Constants and Fields
 
-        protected readonly ContentManager ContentManager;
         private static readonly ILog Log = LogManager.GetLogger<ContentDestination>();
         private readonly Dictionary<string, long> _folderIds;
 
@@ -36,24 +30,21 @@ namespace GoodlyFere.Import.Ektron.Destination
         public ContentDestination()
         {
             _folderIds = new Dictionary<string, long>();
-
-            string authToken = Authenticate();
-            ContentManager = new ContentManager();
-            ContentManager.RequestInformation.AuthenticationToken = authToken;
         }
 
         #endregion
 
         #region Public Methods
 
-        public bool Receive(DataTable data)
+        public override bool Receive(DataTable data)
         {
             Log.InfoFormat("Received data table with name '{0}'", data.TableName);
 
-            ValidateTable(data);
-            SaveOrUpdateContentItems(data);
+            Data = data;
+            ValidateTable();
+            SaveOrUpdateContentItems();
 
-            return false;
+            return true;
         }
 
         #endregion
@@ -75,11 +66,21 @@ namespace GoodlyFere.Import.Ektron.Destination
             return folder;
         }
 
-        protected static bool TableHasRows(DataTable data)
+        protected override void GetExistingContentFilters(ContentCriteria criteria)
         {
-            bool tableHasRows = data.Rows.Count > 0;
-            Log.DebugFormat("Data table has rows: {0}", tableHasRows);
-            return tableHasRows;
+            base.GetExistingContentFilters(criteria);
+
+            foreach (DataRow row in Data.Rows.Cast<DataRow>().Where(dr => dr.IsNew()))
+            {
+                CriteriaFilterGroup<ContentProperty> group = new CriteriaFilterGroup<ContentProperty>();
+                group.Condition = LogicalOperation.And;
+
+                group.AddFilter(ContentProperty.Title, CriteriaFilterOperator.EqualTo, row["title"].ToString());
+                group.AddFilter(
+                    ContentProperty.FolderName, CriteriaFilterOperator.EqualTo, row["folderName"].ToString());
+
+                criteria.FilterGroups.Add(group);
+            }
         }
 
         protected long GetFolderId(DataRow row)
@@ -105,12 +106,6 @@ namespace GoodlyFere.Import.Ektron.Destination
             return -1;
         }
 
-        protected bool HasColumn(DataTable data, string columnName, Type columnType)
-        {
-            return data.Columns[columnName] != null
-                   && data.Columns[columnName].DataType == columnType;
-        }
-
         /// <summary>
         ///     Saves a new content item with the values from the data row.
         ///     The 'title' and 'html' fields are saved. The item is placed
@@ -128,8 +123,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
 
             ContentData content = new ContentData();
-            content.Title = row["title"].ToString();
-            content.Html = row["html"].ToString();
+            SetContentFields(row, content);
             content.FolderId = folderId;
 
             try
@@ -142,17 +136,18 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
         }
 
-        /// <summary>
-        ///     Ensures the table has the 'html', 'folderName' and 'title' columns
-        /// </summary>
-        /// <param name="data">Table to validate schema for.</param>
-        /// <returns>True if table is valid, false otherwise.</returns>
-        protected virtual bool TableHasValidSchema(DataTable data)
+        protected virtual void SetContentFields(DataRow row, ContentData contentItem)
         {
-            bool tableHasValidSchema = HasColumn(data, "html", typeof(string))
-                   && HasColumn(data, "folderName", typeof(string))
-                   && HasColumn(data, "title", typeof(string))
-                   && HasColumn(data, "contentId", typeof(long));
+            contentItem.Title = row["title"].ToString();
+            contentItem.Html = row["html"].ToString();
+        }
+
+        protected override bool TableHasValidSchema()
+        {
+            bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "html", typeof(string))
+                                       && DestinationHelper.HasColumn(Data, "folderName", typeof(string))
+                                       && DestinationHelper.HasColumn(Data, "title", typeof(string))
+                                       && DestinationHelper.HasColumn(Data, "contentId", typeof(long));
             Log.DebugFormat("Table has valid schema: {0}", tableHasValidSchema);
             return tableHasValidSchema;
         }
@@ -166,8 +161,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         protected virtual void UpdateContent(DataRow row, ContentData existingItem)
         {
             Log.InfoFormat("Updating content with title '{0}'", row["title"]);
-            existingItem.Title = row["title"].ToString();
-            existingItem.Html = row["html"].ToString();
+            SetContentFields(row, existingItem);
 
             try
             {
@@ -175,19 +169,9 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
             catch (Exception ex)
             {
-                Log.ErrorFormat("Failed to update content with title '{0}' and id {1}", ex, row["title"], row["contentId"]);
+                Log.ErrorFormat(
+                    "Failed to update content with title '{0}' and id {1}", ex, row["title"], row["contentId"]);
             }
-        }
-
-        private static string Authenticate()
-        {
-            string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
-            string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
-
-            Log.InfoFormat("Authenticating with username: {0} and password: {1}", username, password);
-
-            UserManager um = new UserManager();
-            return um.Authenticate(username, password);
         }
 
         private static ContentData CheckForExistingItem(DataRow row, IEnumerable<ContentData> existingItems)
@@ -204,89 +188,10 @@ namespace GoodlyFere.Import.Ektron.Destination
             return existingItems.FirstOrDefault(ei => ei.Id == id);
         }
 
-        private static Expression GetExistingContentSearchExpression(DataTable data)
+        private void SaveOrUpdateContentItems()
         {
-            Queue<Expression> expressions = new Queue<Expression>();
-
-            foreach (DataRow row in data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()))
-            {
-                Expression idEqual = SearchContentProperty.Id.EqualTo((long)row["contentId"]);
-                expressions.Enqueue(idEqual);
-            }
-
-            foreach (DataRow row in data.Rows.Cast<DataRow>().Where(dr => dr.IsNew()))
-            {
-                Expression and = new AndExpression(
-                    SearchContentProperty.Title == row["title"].ToString(),
-                    SearchContentProperty.FolderName == row["folderName"].ToString());
-                expressions.Enqueue(and);
-            }
-
-            return RollUpExpressions(expressions);
-        }
-
-        private static Expression RollUpExpressions(Queue<Expression> expressions)
-        {
-            while (expressions.Count > 1)
-            {
-                OrExpression or = new OrExpression(
-                    expressions.Dequeue(),
-                    expressions.Dequeue());
-                expressions.Enqueue(or);
-            }
-
-            if (expressions.Count == 1)
-            {
-                var expression = expressions.Dequeue();
-                return expression;
-            }
-
-            return null;
-        }
-
-        private static SearchResponseData SearchForExistingContent(DataTable data)
-        {
-            ISearchManager sm = ObjectFactory.GetSearchManager();
-
-            AdvancedSearchCriteria criteria = new AdvancedSearchCriteria();
-            criteria.ExpressionTree = GetExistingContentSearchExpression(data);
-            criteria.PagingInfo.RecordsPerPage = 10000;
-
-            if (criteria.ExpressionTree != null)
-            {
-                SearchResponseData response = sm.Search(criteria);
-                return response;
-            }
-
-            return null;
-        }
-
-        private List<ContentData> GetContentListFromSearchResults(SearchResponseData response)
-        {
-            if (response == null)
-            {
-                return new List<ContentData>();
-            }
-
-            ContentCriteria contentCrit = new ContentCriteria();
-            foreach (var result in response.Results)
-            {
-                contentCrit.AddFilter(ContentProperty.Id, CriteriaFilterOperator.EqualTo, result["contentid"]);
-            }
-
-            return ContentManager.GetList(contentCrit);
-        }
-
-        private List<ContentData> GetExistingContent(DataTable data)
-        {
-            SearchResponseData response = SearchForExistingContent(data);
-            return GetContentListFromSearchResults(response);
-        }
-
-        private void SaveOrUpdateContentItems(DataTable data)
-        {
-            List<ContentData> existingItems = GetExistingContent(data);
-            foreach (var row in data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
+            List<ContentData> existingItems = GetExistingContent();
+            foreach (var row in Data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
             {
                 var existingItem = CheckForExistingItem(row, existingItems);
                 if (existingItem != null)
@@ -297,19 +202,6 @@ namespace GoodlyFere.Import.Ektron.Destination
                 {
                     SaveContent(row);
                 }
-            }
-        }
-
-        private void ValidateTable(DataTable data)
-        {
-            if (!TableHasValidSchema(data))
-            {
-                throw new ArgumentException("data", "Data table does not have all of the required columns.");
-            }
-
-            if (!TableHasRows(data))
-            {
-                throw new ArgumentException("data", "Table has no rows.");
             }
         }
 

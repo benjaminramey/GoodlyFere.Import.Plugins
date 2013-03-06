@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using Common.Logging;
 using Ektron.Cms;
+using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
 
@@ -20,61 +21,20 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         #region Methods
 
-        protected override void SaveContent(DataRow row)
+        protected override void SetContentFields(DataRow row, ContentData contentItem)
         {
-            Log.InfoFormat("Saving content with title '{0}' in folder '{1}' with smart form ID {2}", row["title"], row["folderName"], row["smartFormId"]);
-
-            long folderId = GetFolderId(row);
-
-            if (folderId <= 0)
-            {
-                return;
-            }
-
-            ContentData content = new ContentData();
-            content.ContType = 1;
-            content.Title = row["title"].ToString();
-            content.Html = row["html"].ToString();
-            content.XmlConfiguration = new XmlConfigData { Id = (long)row["smartFormId"] };
-            content.FolderId = folderId;
-
-            try
-            {
-                ContentManager.Add(content);
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorFormat("Failed to add content with title '{0}'", ex, row["title"]);
-                throw;
-            }
+            base.SetContentFields(row, contentItem);
+            contentItem.ContType = 1;
+            contentItem.XmlConfiguration = new XmlConfigData { Id = (long)row["smartFormId"] };
         }
 
-        protected override bool TableHasValidSchema(DataTable data)
+        protected override bool TableHasValidSchema()
         {
-            bool hasValidSchema = base.TableHasValidSchema(data)
-                   && HasColumn(data, "smartFormId", typeof(long));
+            bool hasValidSchema = base.TableHasValidSchema()
+                                  && DestinationHelper.HasColumn(Data, "smartFormId", typeof(long));
 
             Log.DebugFormat("Data table has valid schema: {0}", hasValidSchema);
             return hasValidSchema;
-        }
-
-        protected override void UpdateContent(DataRow row, ContentData existingItem)
-        {
-            Log.InfoFormat("Updating content with title '{0}' in folder '{1}' with smart form ID {2}", row["title"], row["folderName"], row["smartFormId"]);
-
-            existingItem.Title = row["title"].ToString();
-            existingItem.Html = row["html"].ToString();
-            existingItem.XmlConfiguration.Id = (long)row["smartFormId"];
-
-            try
-            {
-                ContentManager.Update(existingItem);
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorFormat("Failed to update content with title '{0}' and id {1}", ex, row["title"], row["contentId"]);
-                throw;
-            }
         }
 
         #endregion
