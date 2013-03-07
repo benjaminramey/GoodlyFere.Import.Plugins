@@ -62,7 +62,8 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected DestinationBase(string ektronServicesUrl, string adminUserName, string adminPassword)
         {
-            ConfigurationManager.AppSettings["ek_ServicesPath"] = ektronServicesUrl;
+            SetServicesPath(ektronServicesUrl);
+
             _adminUserName = adminUserName;
             _adminPassword = adminPassword;
 
@@ -171,6 +172,24 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 throw new ArgumentException("data", "Table has no rows.");
             }
+        }
+
+        private static void SetServicesPath(string ektronServicesUrl)
+        {
+            Log.InfoFormat("Saving ektron services url: {0}", ektronServicesUrl);
+
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings.AllKeys.Any(k => k == "ek_ServicesPath"))
+            {
+                config.AppSettings.Settings["ek_ServicesPath"].Value = ektronServicesUrl;
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("ek_ServicesPath", ektronServicesUrl);
+            }
+            config.Save();
+
+            ConfigurationManager.AppSettings["ek_ServicesPath"] = ektronServicesUrl;
         }
 
         private List<ContentData> LookForExistingContent()

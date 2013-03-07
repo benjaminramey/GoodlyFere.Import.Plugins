@@ -53,7 +53,7 @@ namespace GoodlyFere.Import.Ektron.Tests
 
         public MetadataDestinationTests()
         {
-            string servicesUrl = ConfigurationManager.AppSettings["ek_ServicesPath"];
+            string servicesUrl = ConfigurationManager.AppSettings["EktronServicesPath"];
             string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
             string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
             _dest = new MetadataDestination(servicesUrl, username, password);

@@ -54,7 +54,7 @@ namespace GoodlyFere.Import.Ektron.Tests
         public ContentDestinationTests()
         {
             _expectedFolderName = EktronTestHelper.TestFolderName;
-            string servicesUrl = ConfigurationManager.AppSettings["ek_ServicesPath"];
+            string servicesUrl = ConfigurationManager.AppSettings["EktronServicesPath"];
             string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
             string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
             _destination = new ContentDestination(servicesUrl, username, password);

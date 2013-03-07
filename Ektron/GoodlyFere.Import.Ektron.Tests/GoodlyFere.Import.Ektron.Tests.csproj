@@ -30,6 +30,9 @@
     <Reference Include="Common.Logging">
       <HintPath>..\packages\Common.Logging.2.1.2\lib\net40\Common.Logging.dll</HintPath>
     </Reference>
+    <Reference Include="Common.Logging.Log4Net1211">
+      <HintPath>..\packages\Common.Logging.Log4Net1211.2.1.2\lib\net40\Common.Logging.Log4Net1211.dll</HintPath>
+    </Reference>
     <Reference Include="CookieEncryption">
       <HintPath>..\lib\CookieEncryption.dll</HintPath>
     </Reference>
@@ -99,6 +102,10 @@
     <Reference Include="GoodlyFere.Import, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\GoodlyFere.Import.1.0.0.8\lib\net40\GoodlyFere.Import.dll</HintPath>
     </Reference>
+    <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Practices.EnterpriseLibrary.Common">
       <HintPath>..\lib\Microsoft.Practices.EnterpriseLibrary.Common.dll</HintPath>
     </Reference>
@@ -165,6 +172,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="EktronConfig\ektron.cms.framework.unity.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
