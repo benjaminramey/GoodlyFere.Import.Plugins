@@ -37,7 +37,7 @@ task Test -depends Compile -precondition { return $run_tests }{
   Exec { & $xunit_console "GoodlyFere.Import.Ektron.Tests.dll" } "xunit failed."
 }
 
-task Package -depends Compile {
+task Package -depends Compile, Test {
   $spec_files = @(Get-ChildItem $packageinfo_dir "*.nuspec" -Recurse)
 
   foreach ($spec in @($spec_files))
