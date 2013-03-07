@@ -1,6 +1,36 @@
-﻿#region Usings
+﻿#region License
+
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="MetadataDestinationTests.cs">
+// GoodlyFere.Import.Ektron.Tests
+// 
+// Copyright (C) 2013 Benjamin Ramey
+// 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+// 
+// http://www.gnu.org/licenses/lgpl-2.1-standalone.html
+// 
+// You can contact me at ben.ramey@gmail.com.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+#endregion
+
+#region Usings
 
 using System;
+using System.Configuration;
 using System.Data;
 using System.Linq;
 using Ektron.Cms;
@@ -13,31 +43,46 @@ namespace GoodlyFere.Import.Ektron.Tests
 {
     public class MetadataDestinationTests
     {
+        #region Constants and Fields
+
+        private readonly MetadataDestination _dest;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        public MetadataDestinationTests()
+        {
+            string servicesUrl = ConfigurationManager.AppSettings["ek_ServicesPath"];
+            string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
+            string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
+            _dest = new MetadataDestination(servicesUrl, username, password);
+        }
+
+        #endregion
+
         #region Public Methods
 
         [Fact]
         public void NoContentId_Throws()
         {
-            var dest = new MetadataDestination();
             var table = GetValidSchemaTable();
             table.Columns.Remove("contentId");
 
-            Assert.Throws<ArgumentException>(() => dest.Receive(table));
+            Assert.Throws<ArgumentException>(() => _dest.Receive(table));
         }
 
         [Fact]
         public void NoRows_Throws()
         {
-            var dest = new MetadataDestination();
             var table = GetValidSchemaTable();
 
-            Assert.Throws<ArgumentException>(() => dest.Receive(table));
+            Assert.Throws<ArgumentException>(() => _dest.Receive(table));
         }
 
         [Fact]
         public void ValidRow_UpdatesMetadataFields()
         {
-            var dest = new MetadataDestination();
             var table = GetValidTable();
 
             ContentData addedContent = EktronTestHelper.AddContent(
@@ -49,7 +94,7 @@ namespace GoodlyFere.Import.Ektron.Tests
 
             table.Rows[0]["contentId"] = addedContent.Id;
 
-            dest.Receive(table);
+            _dest.Receive(table);
 
             var row = table.Rows[0];
             addedContent = EktronTestHelper.GetContent(addedContent.Id);

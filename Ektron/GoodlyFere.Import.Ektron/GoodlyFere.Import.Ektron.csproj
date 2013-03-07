@@ -11,7 +11,7 @@
     <AssemblyName>GoodlyFere.Import.Ektron</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">.\</SolutionDir>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -23,13 +23,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Common.Logging">
@@ -53,8 +48,8 @@
     <Reference Include="Ektron.Newtonsoft.Json">
       <HintPath>..\lib\Ektron.Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="GoodlyFere.Import">
-      <HintPath>..\packages\GoodlyFere.Import.1.0.0.7\lib\net45\GoodlyFere.Import.dll</HintPath>
+    <Reference Include="GoodlyFere.Import, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\GoodlyFere.Import.1.0.0.8\lib\net40\GoodlyFere.Import.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Practices.EnterpriseLibrary.Common">
       <HintPath>..\lib\Microsoft.Practices.EnterpriseLibrary.Common.dll</HintPath>

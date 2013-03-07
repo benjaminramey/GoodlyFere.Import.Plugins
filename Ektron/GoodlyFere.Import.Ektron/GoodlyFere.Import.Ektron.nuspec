@@ -7,13 +7,13 @@
     <authors>Ben Ramey</authors>
     <owners>Ben Ramey</owners>
     <copyright>Copyright 2013 Ben Ramey</copyright>
-    <licenseUrl>https://github.com/benjaminramey/GoodlyFere.Import.Plugins/Ektron/blob/master/LICENSE.txt</licenseUrl>
-    <projectUrl>https://github.com/benjaminramey/GoodlyFere.Import.Plugins/Ektron</projectUrl>
+    <licenseUrl>https://github.com/benjaminramey/GoodlyFere.Import.Plugins/blob/master/Ektron/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/benjaminramey/GoodlyFere.Import.Plugins/tree/master/Ektron</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>And Ektron plugin for the GoodlyFere Import framework.</description>
+    <description>An Ektron plugin for the GoodlyFere Import framework.</description>
     <releaseNotes>
-        Initial package.
+        Initial package upload.  This version provides basic support for SmartFormDestination, MetadataDestination and ContentDestination.
     </releaseNotes>
-    <tags>data import ektron plugin</tags>
+    <tags>data import ektron plugin goodlyfere</tags>
   </metadata>
 </package>

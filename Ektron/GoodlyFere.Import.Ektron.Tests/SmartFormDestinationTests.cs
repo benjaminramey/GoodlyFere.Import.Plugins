@@ -1,9 +1,38 @@
-﻿#region Usings
+﻿#region License
+
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="SmartFormDestinationTests.cs">
+// GoodlyFere.Import.Ektron.Tests
+// 
+// Copyright (C) 2013 Benjamin Ramey
+// 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+// 
+// http://www.gnu.org/licenses/lgpl-2.1-standalone.html
+// 
+// You can contact me at ben.ramey@gmail.com.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+#endregion
+
+#region Usings
 
 using System;
+using System.Configuration;
 using System.Data;
 using System.Linq;
-using System.Xml;
 using GoodlyFere.Import.Ektron.Destination;
 using Xunit;
 
@@ -15,6 +44,7 @@ namespace GoodlyFere.Import.Ektron.Tests
     {
         #region Constants and Fields
 
+        private readonly SmartFormDestination _destination;
         private readonly string _expectedFolderName;
 
         #endregion
@@ -24,11 +54,27 @@ namespace GoodlyFere.Import.Ektron.Tests
         public SmartFormDestinationTests()
         {
             _expectedFolderName = EktronTestHelper.TestFolderName;
+            string servicesUrl = ConfigurationManager.AppSettings["ek_ServicesPath"];
+            string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
+            string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
+            _destination = new SmartFormDestination(servicesUrl, username, password);
         }
 
         #endregion
 
         #region Public Methods
+
+        [Fact]
+        public void AddedContentFieldsMatchRowValues()
+        {
+            var table = GetValidTable();
+
+            _destination.Receive(table);
+            var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
+
+            DataRow row = table.Rows[0];
+            Assert.Equal((long)row["smartFormId"], contentItem.XmlConfiguration.Id);
+        }
 
         public void Dispose()
         {
@@ -37,35 +83,20 @@ namespace GoodlyFere.Import.Ektron.Tests
         }
 
         [Fact]
-        public void AddedContentFieldsMatchRowValues()
-        {
-            var destination = new SmartFormDestination();
-            var table = GetValidTable();
-
-            destination.Receive(table);
-            var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
-
-            DataRow row = table.Rows[0];
-            Assert.Equal((long)row["smartFormId"], contentItem.XmlConfiguration.Id);
-        }
-        
-        [Fact]
         public void NoSmartFormIdField_Throws()
         {
-            var destination = new SmartFormDestination();
             var table = GetValidTable();
             table.Columns.Remove("smartFormId");
 
-            Assert.Throws<ArgumentException>(() => destination.Receive(table));
+            Assert.Throws<ArgumentException>(() => _destination.Receive(table));
         }
 
         [Fact]
         public void ValidTable_DoesntThrow()
         {
-            var destination = new SmartFormDestination();
             var table = GetValidTable();
 
-            Assert.DoesNotThrow(() => destination.Receive(table));
+            Assert.DoesNotThrow(() => _destination.Receive(table));
         }
 
         #endregion

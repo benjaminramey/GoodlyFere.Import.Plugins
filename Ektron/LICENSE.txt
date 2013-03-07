@@ -1,4 +1,4 @@
-LINQ to Ektron Search, a LINQ interface to the Ektron AdvancedSearchCriteria search engine
+GoodlyFere Import Ektron Plugin
 
 Copyright (C) 2013 Benjamin Ramey
 
@@ -18,11 +18,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 http://www.gnu.org/licenses/lgpl-2.1-standalone.html
 
 You can contact me at ben.ramey@gmail.com.
-
-Remotion.Linq (re-linq)
-This library makes use of the Remotion.Linq (re-linq) library which is licensed
-under the LGPL license.
-http://relinq.codeplex.com/license
 
 Common.Logging
 This library makes use of the Common.Logging library which is licensed

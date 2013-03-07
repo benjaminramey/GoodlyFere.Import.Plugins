@@ -1,6 +1,36 @@
-﻿#region Usings
+﻿#region License
+
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ContentDestinationTests.cs">
+// GoodlyFere.Import.Ektron.Tests
+// 
+// Copyright (C) 2013 Benjamin Ramey
+// 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+// 
+// http://www.gnu.org/licenses/lgpl-2.1-standalone.html
+// 
+// You can contact me at ben.ramey@gmail.com.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+#endregion
+
+#region Usings
 
 using System;
+using System.Configuration;
 using System.Data;
 using System.Linq;
 using GoodlyFere.Import.Ektron.Destination;
@@ -14,6 +44,7 @@ namespace GoodlyFere.Import.Ektron.Tests
     {
         #region Constants and Fields
 
+        private readonly ContentDestination _destination;
         private readonly string _expectedFolderName;
 
         #endregion
@@ -23,6 +54,10 @@ namespace GoodlyFere.Import.Ektron.Tests
         public ContentDestinationTests()
         {
             _expectedFolderName = EktronTestHelper.TestFolderName;
+            string servicesUrl = ConfigurationManager.AppSettings["ek_ServicesPath"];
+            string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
+            string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
+            _destination = new ContentDestination(servicesUrl, username, password);
         }
 
         #endregion
@@ -32,10 +67,9 @@ namespace GoodlyFere.Import.Ektron.Tests
         [Fact]
         public void AddedContentFieldsMatchRowValues()
         {
-            var destination = new ContentDestination();
             var table = GetValidTable();
 
-            destination.Receive(table);
+            _destination.Receive(table);
             var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
 
             DataRow row = table.Rows[0];
@@ -55,7 +89,6 @@ namespace GoodlyFere.Import.Ektron.Tests
         {
             string expectedTitle = "testing ektron destination";
 
-            var destination = new ContentDestination();
             DataTable[] tables = new[]
                 {
                     GetValidSchemaTable(),
@@ -72,8 +105,8 @@ namespace GoodlyFere.Import.Ektron.Tests
             }
 
             var beforeList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
-            destination.Receive(tables[0]);
-            destination.Receive(tables[1]);
+            _destination.Receive(tables[0]);
+            _destination.Receive(tables[1]);
             var afterList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
 
             Assert.True(afterList.Count - beforeList.Count > 0, "Destination did not add any items");
@@ -85,7 +118,6 @@ namespace GoodlyFere.Import.Ektron.Tests
         {
             string expectedTitle = "testing ektron destination";
 
-            var destination = new ContentDestination();
             var table = GetValidSchemaTable();
 
             for (int i = 0; i < 2; i++)
@@ -98,7 +130,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             }
 
             var beforeList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
-            destination.Receive(table);
+            _destination.Receive(table);
             var afterList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
 
             Assert.True(afterList.Count - beforeList.Count > 0, "Destination did not add any items");
@@ -108,35 +140,32 @@ namespace GoodlyFere.Import.Ektron.Tests
         [Fact]
         public void IncorrectColumns_Throws()
         {
-            var destination = new ContentDestination();
             var table = new DataTable("bob");
 
-            Assert.Throws<ArgumentException>(() => destination.Receive(table));
+            Assert.Throws<ArgumentException>(() => _destination.Receive(table));
         }
 
         [Fact]
         public void NoRows_Throws()
         {
-            var destination = new ContentDestination();
             var table = GetValidSchemaTable();
 
-            Assert.Throws<ArgumentException>(() => destination.Receive(table));
+            Assert.Throws<ArgumentException>(() => _destination.Receive(table));
         }
 
         [Fact]
         public void UpdatedContentFieldsMatchRowValues()
         {
-            var destination = new ContentDestination();
             var table = GetValidTable();
 
-            destination.Receive(table);
+            _destination.Receive(table);
             var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
 
             DataRow row = table.Rows[0];
             row["contentId"] = contentItem.Id;
             row["html"] = "this is the updated html!!!";
 
-            destination.Receive(table);
+            _destination.Receive(table);
             contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
 
             Assert.Equal(row["title"].ToString(), contentItem.Title);
@@ -147,10 +176,9 @@ namespace GoodlyFere.Import.Ektron.Tests
         [Fact]
         public void ValidTable_DoesntThrow()
         {
-            var destination = new ContentDestination();
             var table = GetValidTable();
 
-            Assert.DoesNotThrow(() => destination.Receive(table));
+            Assert.DoesNotThrow(() => _destination.Receive(table));
         }
 
         [Fact]
@@ -158,7 +186,6 @@ namespace GoodlyFere.Import.Ektron.Tests
         {
             string expectedTitle = "testing ektron destination";
 
-            var destination = new ContentDestination();
             var table = GetValidSchemaTable();
 
             var row = table.NewRow();
@@ -167,7 +194,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             row["folderName"] = _expectedFolderName;
             table.Rows.Add(row);
 
-            destination.Receive(table);
+            _destination.Receive(table);
             var list = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
 
             Assert.True(list.Count > 0, "No items found");
