@@ -27,7 +27,8 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         #region Constructors and Destructors
 
-        public ContentDestination()
+        public ContentDestination(string ektronServicesUrl, string adminUserName, string adminPassword)
+            : base(ektronServicesUrl, adminUserName, adminPassword)
         {
             _folderIds = new Dictionary<string, long>();
         }

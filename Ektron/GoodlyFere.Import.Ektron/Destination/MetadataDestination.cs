@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿#region Usings
+
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System;
@@ -7,6 +9,8 @@ using Ektron.Cms;
 using Ektron.Cms.Content;
 using GoodlyFere.Import.Ektron.Tools;
 
+#endregion
+
 namespace GoodlyFere.Import.Ektron.Destination
 {
     public class MetadataDestination : DestinationBase
@@ -14,6 +18,15 @@ namespace GoodlyFere.Import.Ektron.Destination
         #region Constants and Fields
 
         private static readonly ILog Log = LogManager.GetLogger<MetadataDestination>();
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        public MetadataDestination(string ektronServicesUrl, string adminUserName, string adminPassword)
+            : base(ektronServicesUrl, adminUserName, adminPassword)
+        {
+        }
 
         #endregion
 

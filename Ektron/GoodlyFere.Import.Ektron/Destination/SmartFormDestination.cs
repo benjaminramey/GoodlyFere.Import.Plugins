@@ -19,6 +19,15 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         #endregion
 
+        #region Constructors and Destructors
+
+        public SmartFormDestination(string ektronServicesUrl, string adminUserName, string adminPassword)
+            : base(ektronServicesUrl, adminUserName, adminPassword)
+        {
+        }
+
+        #endregion
+
         #region Methods
 
         protected override void SetContentFields(DataRow row, ContentData contentItem)

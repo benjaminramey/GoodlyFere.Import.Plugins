@@ -24,13 +24,19 @@ namespace GoodlyFere.Import.Ektron.Destination
         #region Constants and Fields
 
         private static readonly ILog Log = LogManager.GetLogger<DestinationBase>();
+        private string _adminUserName;
+        private string _adminPassword;
 
         #endregion
 
         #region Constructors and Destructors
 
-        protected DestinationBase()
+        protected DestinationBase(string ektronServicesUrl, string adminUserName, string adminPassword)
         {
+            ConfigurationManager.AppSettings["ek_ServicesPath"] = ektronServicesUrl;
+            _adminUserName = adminUserName;
+            _adminPassword = adminPassword;
+
             string authToken = Authenticate();
             ContentManager = new ContentManager();
             ContentManager.RequestInformation.AuthenticationToken = authToken;
@@ -55,10 +61,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected static string Authenticate()
         {
-            string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
-            string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
-
-            Log.InfoFormat("Authenticating with username: {0} and password: {1}", username, password);
+            Log.InfoFormat("Authenticating with username: {0} and password: {1}", _adminUserName, _adminPassword);
 
             UserManager um = new UserManager();
             return um.Authenticate(username, password);

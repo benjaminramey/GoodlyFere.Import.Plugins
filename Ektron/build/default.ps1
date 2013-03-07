@@ -12,7 +12,7 @@ properties {
   $xunit_console = "$tools_dir\xunit.console.clr4.exe"
 }
 
-Framework "4.0"
+Framework "4.5"
 
 task default -depends Package
 
