@@ -36,6 +36,7 @@ using System;
 using Common.Logging;
 using Ektron.Cms;
 using Ektron.Cms.Content;
+using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
@@ -94,7 +95,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             Log.InfoFormat("Updating metadata", Data.TableName);
 
             List<ContentData> contentItems = GetExistingContent();
-            foreach (DataRow row in Data.Rows.Cast<DataRow>())
+            foreach (DataRow row in Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()))
             {
                 ContentData item = contentItems.Single(ci => (long)row["contentId"] == ci.Id);
 

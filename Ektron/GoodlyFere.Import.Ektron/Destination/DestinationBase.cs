@@ -129,25 +129,6 @@ namespace GoodlyFere.Import.Ektron.Destination
             criteria.FilterGroups.Add(group);
         }
 
-        protected Expression RollUpExpressions(Queue<Expression> expressions)
-        {
-            while (expressions.Count > 1)
-            {
-                OrExpression or = new OrExpression(
-                    expressions.Dequeue(),
-                    expressions.Dequeue());
-                expressions.Enqueue(or);
-            }
-
-            if (expressions.Count == 1)
-            {
-                var expression = expressions.Dequeue();
-                return expression;
-            }
-
-            return null;
-        }
-
         protected bool TableHasRows()
         {
             bool tableHasRows = Data.Rows.Count > 0;
@@ -165,30 +146,18 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             if (!TableHasValidSchema())
             {
-                throw new ArgumentException("data", "Data table does not have all of the required columns.");
+                throw new ArgumentException("Data table does not have all of the required columns.", "data");
             }
 
             if (!TableHasRows())
             {
-                throw new ArgumentException("data", "Table has no rows.");
+                throw new ArgumentException("Table has no rows.", "data");
             }
         }
 
         private static void SetServicesPath(string ektronServicesUrl)
         {
             Log.InfoFormat("Saving ektron services url: {0}", ektronServicesUrl);
-
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            if (config.AppSettings.Settings.AllKeys.Any(k => k == "ek_ServicesPath"))
-            {
-                config.AppSettings.Settings["ek_ServicesPath"].Value = ektronServicesUrl;
-            }
-            else
-            {
-                config.AppSettings.Settings.Add("ek_ServicesPath", ektronServicesUrl);
-            }
-            config.Save();
-
             ConfigurationManager.AppSettings["ek_ServicesPath"] = ektronServicesUrl;
         }
 
@@ -198,7 +167,28 @@ namespace GoodlyFere.Import.Ektron.Destination
             criteria.Condition = LogicalOperation.Or;
             GetExistingContentFilters(criteria);
 
-            return ContentManager.GetList(criteria);
+            List<ContentData> contentList = new List<ContentData>();
+            if (criteria.FilterGroups.Count > 10)
+            {
+                ContentCriteria piecemealCriteria = new ContentCriteria();
+                criteria.Condition = LogicalOperation.Or;
+                for (int i = 0; i < criteria.FilterGroups.Count % 10 + 1; i++)
+                {
+                    var groups = criteria.FilterGroups.Skip(i * 10).Take(10).ToArray();
+                    if (groups.Any())
+                    {
+                        piecemealCriteria.FilterGroups.Clear();
+                        piecemealCriteria.FilterGroups.AddRange(groups);
+                        contentList.AddRange(ContentManager.GetList(piecemealCriteria));
+                    }
+                }
+            }
+            else
+            {
+                contentList.AddRange(ContentManager.GetList(criteria));
+            }
+
+            return contentList;
         }
 
         #endregion
