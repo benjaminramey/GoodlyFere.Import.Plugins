@@ -99,12 +99,10 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected List<ContentData> GetExistingContent()
         {
-            int numNotNewRows = Data.Rows.Cast<DataRow>().Count(dr => !dr.IsNew());
-            Log.InfoFormat("Getting existing content from {0} row(s).", numNotNewRows);
             List<ContentData> existingItems = LookForExistingContent();
             Log.InfoFormat("Found {0} results for existing content.", existingItems.Count);
 
-            if (numNotNewRows != existingItems.Count)
+            if (existingItems.Count > 0)
             {
                 IEnumerable<long> rowIds =
                     Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()).Select(dr => (long)dr["contentId"]);
@@ -144,6 +142,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected virtual void ValidateTable()
         {
+            Log.InfoFormat("Validating table '{0}'", Data.TableName);
             if (!TableHasValidSchema())
             {
                 throw new ArgumentException("Data table does not have all of the required columns.", "data");

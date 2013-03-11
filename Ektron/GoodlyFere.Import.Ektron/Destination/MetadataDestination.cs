@@ -64,12 +64,13 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         public override bool Receive(DataTable data)
         {
-            Log.InfoFormat("Received data table with name '{0}'", data.TableName);
+            Log.InfoFormat("Beginning Ektron metadata update from data table '{0}'", data.TableName);
 
             Data = data;
             ValidateTable();
             UpdateMetaData();
-
+            
+            Log.InfoFormat("Ektron metadata update from data table '{0}' is done.", data.TableName);
             return true;
         }
 
@@ -92,11 +93,10 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private void UpdateMetaData()
         {
-            Log.InfoFormat("Updating metadata", Data.TableName);
-
             List<ContentData> contentItems = GetExistingContent();
             foreach (DataRow row in Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()))
             {
+                Log.InfoFormat("Updating metadata for '{0}' with id {1}", row["title"], row["contentId"]);
                 ContentData item = contentItems.Single(ci => (long)row["contentId"] == ci.Id);
 
                 foreach (DataColumn column in Data.Columns.Cast<DataColumn>().Where(dc => dc.ColumnName != "contentId"))
@@ -105,10 +105,13 @@ namespace GoodlyFere.Import.Ektron.Destination
                     if (metaData == null)
                     {
                         Log.WarnFormat(
-                            "Metadata named '{0}' not found for content item {1}", column.ColumnName, item.Id);
+                            "Metadata named '{0}' not found for content item {1}",
+                            column.ColumnName,
+                            item.Id);
                         continue;
                     }
 
+                    Log.InfoFormat("Setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
                     metaData.Text = row[column].ToString();
                 }
 

@@ -68,12 +68,13 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         public override bool Receive(DataTable data)
         {
-            Log.InfoFormat("Received data table with name '{0}'", data.TableName);
+            Log.InfoFormat("Beginning Ektron content push from data table '{0}'", data.TableName);
 
             Data = data;
             ValidateTable();
             SaveOrUpdateContentItems();
 
+            Log.InfoFormat("Ektron content push from data table '{0}' is done.", data.TableName);
             return true;
         }
 
@@ -159,6 +160,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             try
             {
                 ContentManager.Add(content);
+                Log.InfoFormat("'{0}' saved successfully.", row["title"]);
             }
             catch (Exception ex)
             {
@@ -190,7 +192,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         /// <param name="existingItem">Existing content item to update.</param>
         protected virtual void UpdateContent(DataRow row, ContentData existingItem)
         {
-            Log.InfoFormat("Updating content with title '{0}'", row["title"]);
+            Log.InfoFormat("Updating content with title '{0}' and id {1}", row["title"], row["contentId"]);
             SetContentFields(row, existingItem);
 
             try
@@ -200,14 +202,18 @@ namespace GoodlyFere.Import.Ektron.Destination
             catch (Exception ex)
             {
                 Log.ErrorFormat(
-                    "Failed to update content with title '{0}' and id {1}", ex, row["title"], row["contentId"]);
+                    "Failed to update content with title '{0}' and id {1}: {2}",
+                    ex,
+                    row["title"], row["contentId"], ex.Message);
             }
         }
 
         private static ContentData CheckForExistingItem(DataRow row, IEnumerable<ContentData> existingItems)
         {
+            Log.InfoFormat("Checking if '{0}' is an existing item.", row["title"]);
             if (row.IsNew())
             {
+                Log.InfoFormat("'{0}' has no contentId, checking by title and folder name.", row["title"]);
                 string title = row["title"].ToString();
                 string folderName = row["folderName"].ToString();
 
@@ -220,16 +226,19 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private void SaveOrUpdateContentItems()
         {
+            Log.InfoFormat("Determining whether to save or update each row.");
             List<ContentData> existingItems = GetExistingContent();
             foreach (var row in Data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
             {
                 var existingItem = CheckForExistingItem(row, existingItems);
                 if (existingItem != null)
                 {
+                    Log.InfoFormat("'{0}' exists, going to update.", row["title"]);
                     UpdateContent(row, existingItem);
                 }
                 else
                 {
+                    Log.InfoFormat("'{0}' does not exist, going to save.", row["title"]);
                     SaveContent(row);
                 }
             }
