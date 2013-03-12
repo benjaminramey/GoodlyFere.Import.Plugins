@@ -45,7 +45,7 @@ namespace GoodlyFere.Import.Ektron.Tests
         #region Constants and Fields
 
         private readonly SmartFormDestination _destination;
-        private readonly string _expectedFolderName;
+        private readonly string _expectedFolderPath;
 
         #endregion
 
@@ -53,7 +53,7 @@ namespace GoodlyFere.Import.Ektron.Tests
 
         public SmartFormDestinationTests()
         {
-            _expectedFolderName = EktronTestHelper.TestFolderName;
+            _expectedFolderPath = EktronTestHelper.TestFolderPath;
             string servicesUrl = ConfigurationManager.AppSettings["EktronServicesPath"];
             string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
             string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
@@ -70,7 +70,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             var table = GetValidTable();
 
             _destination.Receive(table);
-            var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
+            var contentItem = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath).First();
 
             DataRow row = table.Rows[0];
             Assert.Equal((long)row["smartFormId"], contentItem.XmlConfiguration.Id);
@@ -78,7 +78,7 @@ namespace GoodlyFere.Import.Ektron.Tests
 
         public void Dispose()
         {
-            var list = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var list = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
             EktronTestHelper.DeleteContent(list);
         }
 
@@ -106,7 +106,7 @@ namespace GoodlyFere.Import.Ektron.Tests
         private static DataTable GetValidSchemaTable()
         {
             var table = new DataTable("test");
-            table.Columns.Add(new DataColumn("folderName", typeof(string)));
+            table.Columns.Add(new DataColumn("folderPath", typeof(string)));
             table.Columns.Add(new DataColumn("html", typeof(string)));
             table.Columns.Add(new DataColumn("title", typeof(string)));
             table.Columns.Add(new DataColumn("contentId", typeof(long)));
@@ -128,9 +128,9 @@ namespace GoodlyFere.Import.Ektron.Tests
   </Values>
 </root>
 ";
-            row["folderName"] = _expectedFolderName;
+            row["folderPath"] = _expectedFolderPath;
             row["title"] = "title";
-            row["smartFormId"] = 39;
+            row["smartFormId"] = 16;
             row["contentId"] = 0;
             table.Rows.Add(row);
             return table;

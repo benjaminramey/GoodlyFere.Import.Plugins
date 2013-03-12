@@ -41,11 +41,12 @@ using Xunit;
 
 namespace GoodlyFere.Import.Ektron.Tests
 {
-    public class MetadataDestinationTests
+    public class MetadataDestinationTests : IDisposable
     {
         #region Constants and Fields
 
         private readonly MetadataDestination _dest;
+        private readonly string _expectedFolderPath;
 
         #endregion
 
@@ -53,6 +54,7 @@ namespace GoodlyFere.Import.Ektron.Tests
 
         public MetadataDestinationTests()
         {
+            _expectedFolderPath = EktronTestHelper.TestFolderPath;
             string servicesUrl = ConfigurationManager.AppSettings["EktronServicesPath"];
             string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
             string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
@@ -62,6 +64,12 @@ namespace GoodlyFere.Import.Ektron.Tests
         #endregion
 
         #region Public Methods
+
+        public void Dispose()
+        {
+            var list = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
+            EktronTestHelper.DeleteContent(list);
+        }
 
         [Fact]
         public void NoContentId_Throws()

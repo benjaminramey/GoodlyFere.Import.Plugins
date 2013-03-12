@@ -53,11 +53,11 @@ namespace GoodlyFere.Import.Ektron.Tests
 
         #region Public Properties
 
-        public static string TestFolderName
+        public static string TestFolderPath
         {
             get
             {
-                return "Import Testing";
+                return "ProductsImportTesting/";
             }
         }
 
@@ -71,7 +71,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             IContentManager cm = ObjectFactory.GetContent();
             cm.RequestInformation.AuthenticationToken = token;
 
-            content.FolderId = GetFolderData(TestFolderName).Id;
+            content.FolderId = GetFolderData(TestFolderPath).Id;
             return cm.Add(content);
         }
 
@@ -106,22 +106,22 @@ namespace GoodlyFere.Import.Ektron.Tests
             return cm.GetItem(id, true);
         }
 
-        internal static List<ContentData> GetContentByFolderName(string folderName)
+        internal static List<ContentData> GetContentByFolderPath(string folderPath)
         {
             IContentManager cm = ObjectFactory.GetContent();
             ContentCriteria criteria = new ContentCriteria();
-            criteria.AddFilter(ContentProperty.FolderName, CriteriaFilterOperator.EqualTo, folderName);
+            criteria.AddFilter(ContentProperty.Path, CriteriaFilterOperator.EqualTo, folderPath);
             return cm.GetList(criteria);
         }
 
-        internal static FolderData GetFolderData(string folderName)
+        internal static FolderData GetFolderData(string folderPath)
         {
             FolderManager fm = new FolderManager();
             FolderCriteria folderCrit = new FolderCriteria();
             folderCrit.AddFilter(
-                FolderProperty.FolderName,
+                FolderProperty.FolderPath,
                 CriteriaFilterOperator.EqualTo,
-                folderName);
+                folderPath);
 
             FolderData folder = fm.GetList(folderCrit).FirstOrDefault();
             return folder;

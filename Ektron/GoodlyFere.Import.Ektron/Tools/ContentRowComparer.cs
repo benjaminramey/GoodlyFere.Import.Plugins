@@ -47,8 +47,8 @@ namespace GoodlyFere.Import.Ektron
         {
             string xTitle = x["title"].ToString();
             string yTitle = y["title"].ToString();
-            string xFolder = x["folderName"].ToString();
-            string yFolder = y["folderName"].ToString();
+            string xFolder = x["folderPath"].ToString();
+            string yFolder = y["folderPath"].ToString();
 
             if (!x.IsNew() && !y.IsNew())
             {
@@ -63,7 +63,7 @@ namespace GoodlyFere.Import.Ektron
         public int GetHashCode(DataRow obj)
         {
             string title = obj["title"].ToString();
-            string folder = obj["folderName"].ToString();
+            string folder = obj["folderPath"].ToString();
 
             if (!obj.IsNew())
             {

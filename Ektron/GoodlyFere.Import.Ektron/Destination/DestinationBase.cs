@@ -135,7 +135,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         }
 
         /// <summary>
-        ///     Ensures the table has the 'html', 'folderName' and 'title' columns
+        ///     Ensures the table has the 'html', 'folderPath' and 'title' columns
         /// </summary>
         /// <returns>True if table is valid, false otherwise.</returns>
         protected abstract bool TableHasValidSchema();

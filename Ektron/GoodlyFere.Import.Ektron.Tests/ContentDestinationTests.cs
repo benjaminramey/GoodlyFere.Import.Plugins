@@ -45,7 +45,7 @@ namespace GoodlyFere.Import.Ektron.Tests
         #region Constants and Fields
 
         private readonly ContentDestination _destination;
-        private readonly string _expectedFolderName;
+        private readonly string _expectedFolderPath;
 
         #endregion
 
@@ -53,7 +53,7 @@ namespace GoodlyFere.Import.Ektron.Tests
 
         public ContentDestinationTests()
         {
-            _expectedFolderName = EktronTestHelper.TestFolderName;
+            _expectedFolderPath = EktronTestHelper.TestFolderPath;
             string servicesUrl = ConfigurationManager.AppSettings["EktronServicesPath"];
             string username = ConfigurationManager.AppSettings["EktronAdminUsername"];
             string password = ConfigurationManager.AppSettings["EktronAdminPassword"];
@@ -70,17 +70,17 @@ namespace GoodlyFere.Import.Ektron.Tests
             var table = GetValidTable();
 
             _destination.Receive(table);
-            var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
+            var contentItem = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath).First();
 
             DataRow row = table.Rows[0];
             Assert.Equal(row["title"].ToString(), contentItem.Title);
-            Assert.Equal(row["folderName"].ToString(), contentItem.FolderName);
+            Assert.Equal(row["folderPath"].ToString(), contentItem.Path);
             Assert.Equal(row["html"].ToString(), contentItem.Html);
         }
 
         public void Dispose()
         {
-            var list = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var list = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
             EktronTestHelper.DeleteContent(list);
         }
 
@@ -100,14 +100,14 @@ namespace GoodlyFere.Import.Ektron.Tests
                 var row = tables[i].NewRow();
                 row["html"] = "this is some html!";
                 row["title"] = expectedTitle;
-                row["folderName"] = _expectedFolderName;
+                row["folderPath"] = _expectedFolderPath;
                 tables[i].Rows.Add(row);
             }
 
-            var beforeList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var beforeList = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
             _destination.Receive(tables[0]);
             _destination.Receive(tables[1]);
-            var afterList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var afterList = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
 
             Assert.True(afterList.Count - beforeList.Count > 0, "Destination did not add any items");
             Assert.True(afterList.Count - beforeList.Count == 1, "Destination added more than one identical item");
@@ -125,13 +125,13 @@ namespace GoodlyFere.Import.Ektron.Tests
                 var row = table.NewRow();
                 row["html"] = "this is some html!";
                 row["title"] = expectedTitle;
-                row["folderName"] = _expectedFolderName;
+                row["folderPath"] = _expectedFolderPath;
                 table.Rows.Add(row);
             }
 
-            var beforeList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var beforeList = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
             _destination.Receive(table);
-            var afterList = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var afterList = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
 
             Assert.True(afterList.Count - beforeList.Count > 0, "Destination did not add any items");
             Assert.True(afterList.Count - beforeList.Count == 1, "Destination added more than one identical item");
@@ -159,17 +159,17 @@ namespace GoodlyFere.Import.Ektron.Tests
             var table = GetValidTable();
 
             _destination.Receive(table);
-            var contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
+            var contentItem = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath).First();
 
             DataRow row = table.Rows[0];
             row["contentId"] = contentItem.Id;
             row["html"] = "this is the updated html!!!";
 
             _destination.Receive(table);
-            contentItem = EktronTestHelper.GetContentByFolderName(_expectedFolderName).First();
+            contentItem = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath).First();
 
             Assert.Equal(row["title"].ToString(), contentItem.Title);
-            Assert.Equal(row["folderName"].ToString(), contentItem.FolderName);
+            Assert.Equal(row["folderPath"].ToString(), contentItem.Path);
             Assert.Equal(row["html"].ToString(), contentItem.Html);
         }
 
@@ -191,11 +191,11 @@ namespace GoodlyFere.Import.Ektron.Tests
             var row = table.NewRow();
             row["html"] = "this is some html!";
             row["title"] = expectedTitle;
-            row["folderName"] = _expectedFolderName;
+            row["folderPath"] = _expectedFolderPath;
             table.Rows.Add(row);
 
             _destination.Receive(table);
-            var list = EktronTestHelper.GetContentByFolderName(_expectedFolderName);
+            var list = EktronTestHelper.GetContentByFolderPath(_expectedFolderPath);
 
             Assert.True(list.Count > 0, "No items found");
             Assert.True(list.Any(c => c.Title == expectedTitle), "No item with expected title found");
@@ -208,7 +208,7 @@ namespace GoodlyFere.Import.Ektron.Tests
         private static DataTable GetValidSchemaTable()
         {
             var table = new DataTable("test");
-            table.Columns.Add(new DataColumn("folderName", typeof(string)));
+            table.Columns.Add(new DataColumn("folderPath", typeof(string)));
             table.Columns.Add(new DataColumn("html", typeof(string)));
             table.Columns.Add(new DataColumn("title", typeof(string)));
             table.Columns.Add(new DataColumn("contentId", typeof(long)));
@@ -220,7 +220,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             var table = GetValidSchemaTable();
             var row = table.NewRow();
             row["html"] = "html";
-            row["folderName"] = _expectedFolderName;
+            row["folderPath"] = _expectedFolderPath;
             row["title"] = "title";
             row["contentId"] = 0;
             table.Rows.Add(row);

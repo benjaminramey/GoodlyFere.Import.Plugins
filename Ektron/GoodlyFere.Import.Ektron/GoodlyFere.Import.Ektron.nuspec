@@ -12,7 +12,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>An Ektron plugin for the GoodlyFere Import framework.</description>
     <releaseNotes>
-        Fixed bug with setting the ek_ServicesPath appSetting in code.
+        Changed requirements in Destinations to folderPath instead of folderName.
     </releaseNotes>
     <tags>data import ektron plugin goodlyfere</tags>
   </metadata>

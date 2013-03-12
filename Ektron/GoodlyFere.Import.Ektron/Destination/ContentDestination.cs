@@ -82,16 +82,16 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         #region Methods
 
-        protected static FolderData GetFolderData(string folderName)
+        protected static FolderData GetFolderData(string folderPath)
         {
-            Log.InfoFormat("Getting folder data for folder with name '{0}'", folderName);
+            Log.InfoFormat("Getting folder data for folder with path '{0}'", folderPath);
 
             FolderManager fm = new FolderManager();
             FolderCriteria folderCrit = new FolderCriteria();
             folderCrit.AddFilter(
-                FolderProperty.FolderName,
+                FolderProperty.FolderPath,
                 CriteriaFilterOperator.EqualTo,
-                folderName);
+                folderPath);
 
             FolderData folder = fm.GetList(folderCrit).FirstOrDefault();
             return folder;
@@ -108,7 +108,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
                 group.AddFilter(ContentProperty.Title, CriteriaFilterOperator.EqualTo, row["title"].ToString());
                 group.AddFilter(
-                    ContentProperty.FolderName, CriteriaFilterOperator.EqualTo, row["folderName"].ToString());
+                    ContentProperty.Path, CriteriaFilterOperator.EqualTo, row["folderPath"].ToString());
 
                 criteria.FilterGroups.Add(group);
             }
@@ -116,36 +116,36 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected long GetFolderId(DataRow row)
         {
-            Log.InfoFormat("Getting folder id for folder with name '{0}'", row["folderName"]);
+            Log.InfoFormat("Getting folder id for folder with name '{0}'", row["folderPath"]);
 
-            string folderName = row["folderName"].ToString();
-            if (_folderIds.ContainsKey(folderName))
+            string folderPath = row["folderPath"].ToString();
+            if (_folderIds.ContainsKey(folderPath))
             {
-                Log.DebugFormat("Folder id was cached: {0}", _folderIds[folderName]);
-                return _folderIds[folderName];
+                Log.DebugFormat("Folder id was cached: {0}", _folderIds[folderPath]);
+                return _folderIds[folderPath];
             }
 
-            var folder = GetFolderData(folderName);
+            var folder = GetFolderData(folderPath);
             if (folder != null)
             {
-                _folderIds.Add(folderName, folder.Id);
+                _folderIds.Add(folderPath, folder.Id);
                 Log.DebugFormat("Folder id was found and added to cache: {0}", folder.Id);
                 return folder.Id;
             }
 
-            Log.DebugFormat("Did not find folder with name '{0}'", folderName);
+            Log.DebugFormat("Did not find folder with path '{0}'", folderPath);
             return -1;
         }
 
         /// <summary>
         ///     Saves a new content item with the values from the data row.
         ///     The 'title' and 'html' fields are saved. The item is placed
-        ///     in the folder found using the 'folderName' column value in the data row.
+        ///     in the folder found using the 'folderPath' column value in the data row.
         /// </summary>
         /// <param name="row">Row with content data.</param>
         protected virtual void SaveContent(DataRow row)
         {
-            Log.InfoFormat("Saving content with title '{0}' in folder '{1}'", row["title"], row["folderName"]);
+            Log.InfoFormat("Saving content with title '{0}' in folder '{1}'", row["title"], row["folderPath"]);
             long folderId = GetFolderId(row);
 
             if (folderId <= 0)
@@ -177,7 +177,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         protected override bool TableHasValidSchema()
         {
             bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "html", typeof(string))
-                                       && DestinationHelper.HasColumn(Data, "folderName", typeof(string))
+                                       && DestinationHelper.HasColumn(Data, "folderPath", typeof(string))
                                        && DestinationHelper.HasColumn(Data, "title", typeof(string))
                                        && DestinationHelper.HasColumn(Data, "contentId", typeof(long));
             Log.DebugFormat("Table has valid schema: {0}", tableHasValidSchema);
@@ -215,9 +215,9 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 Log.InfoFormat("'{0}' has no contentId, checking by title and folder name.", row["title"]);
                 string title = row["title"].ToString();
-                string folderName = row["folderName"].ToString();
+                string folderPath = row["folderPath"].ToString();
 
-                return existingItems.FirstOrDefault(ei => ei.Title == title && ei.FolderName == folderName);
+                return existingItems.FirstOrDefault(ei => ei.Title == title && ei.Path == folderPath);
             }
 
             long id = (long)row["contentId"];
