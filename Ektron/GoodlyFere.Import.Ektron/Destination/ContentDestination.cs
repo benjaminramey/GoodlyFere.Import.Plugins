@@ -68,13 +68,13 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         public override bool Receive(DataTable data)
         {
-            Log.InfoFormat("Beginning Ektron content push from data table '{0}'", data.TableName);
+            Log.InfoFormat("==> Beginning Ektron content push from data table '{0}'", data.TableName);
 
             Data = data;
             ValidateTable();
             SaveOrUpdateContentItems();
 
-            Log.InfoFormat("Ektron content push from data table '{0}' is done.", data.TableName);
+            Log.InfoFormat("==| Ektron content push from data table '{0}' is done.", data.TableName);
             return true;
         }
 
@@ -101,17 +101,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             base.GetExistingContentFilters(criteria);
 
-            foreach (DataRow row in Data.Rows.Cast<DataRow>().Where(dr => dr.IsNew()))
-            {
-                CriteriaFilterGroup<ContentProperty> group = new CriteriaFilterGroup<ContentProperty>();
-                group.Condition = LogicalOperation.And;
-
-                group.AddFilter(ContentProperty.Title, CriteriaFilterOperator.EqualTo, row["title"].ToString());
-                group.AddFilter(
-                    ContentProperty.Path, CriteriaFilterOperator.EqualTo, row["folderPath"].ToString());
-
-                criteria.FilterGroups.Add(group);
-            }
+            DestinationHelper.BuildTitleAndPathGroups(Data, criteria);
         }
 
         protected long GetFolderId(DataRow row)
@@ -150,6 +140,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
             if (folderId <= 0)
             {
+                Log.WarnFormat("Can't save item '{0}' because no folder was found for it.", row["title"]);
                 return;
             }
 
@@ -160,11 +151,11 @@ namespace GoodlyFere.Import.Ektron.Destination
             try
             {
                 ContentManager.Add(content);
-                Log.InfoFormat("'{0}' saved successfully.", row["title"]);
+                Log.InfoFormat("'{0}' saved successfully with id {1}.", row["title"], content.Id);
             }
             catch (Exception ex)
             {
-                Log.ErrorFormat("Failed to add content with title '{0}'", ex, row["title"]);
+                Log.ErrorFormat("Failed to save content with title '{0}'", ex, row["title"]);
             }
         }
 
@@ -198,13 +189,16 @@ namespace GoodlyFere.Import.Ektron.Destination
             try
             {
                 ContentManager.Update(existingItem);
+                Log.InfoFormat("'{0}' updated successfully with id {1}.", row["title"], existingItem.Id);
             }
             catch (Exception ex)
             {
                 Log.ErrorFormat(
                     "Failed to update content with title '{0}' and id {1}: {2}",
                     ex,
-                    row["title"], row["contentId"], ex.Message);
+                    row["title"],
+                    row["contentId"],
+                    ex.Message);
             }
         }
 
@@ -213,7 +207,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             Log.InfoFormat("Checking if '{0}' is an existing item.", row["title"]);
             if (row.IsNew())
             {
-                Log.InfoFormat("'{0}' has no contentId, checking by title and folder name.", row["title"]);
+                Log.InfoFormat("'{0}' has no contentId, checking by title and folder path.", row["title"]);
                 string title = row["title"].ToString();
                 string folderPath = row["folderPath"].ToString();
 

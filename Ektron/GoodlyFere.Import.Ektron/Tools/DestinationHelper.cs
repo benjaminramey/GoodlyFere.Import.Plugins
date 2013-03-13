@@ -32,6 +32,9 @@
 using System;
 using System.Data;
 using System.Linq;
+using Ektron.Cms.Common;
+using Ektron.Cms.Content;
+using GoodlyFere.Import.Ektron.Extensions;
 
 #endregion
 
@@ -45,6 +48,25 @@ namespace GoodlyFere.Import.Ektron.Tools
         {
             return data.Columns[columnName] != null
                    && data.Columns[columnName].DataType == columnType;
+        }
+
+        #endregion
+
+        #region Methods
+
+        internal static void BuildTitleAndPathGroups(DataTable data, ContentCriteria criteria)
+        {
+            foreach (DataRow row in data.Rows.Cast<DataRow>().Where(dr => dr.IsNew()))
+            {
+                CriteriaFilterGroup<ContentProperty> group = new CriteriaFilterGroup<ContentProperty>();
+                @group.Condition = LogicalOperation.And;
+
+                @group.AddFilter(ContentProperty.Title, CriteriaFilterOperator.EqualTo, row["title"].ToString());
+                @group.AddFilter(
+                    ContentProperty.Path, CriteriaFilterOperator.EqualTo, row["folderPath"].ToString());
+
+                criteria.FilterGroups.Add(@group);
+            }
         }
 
         #endregion

@@ -47,6 +47,11 @@ namespace GoodlyFere.Import.Ektron.Destination
     {
         #region Constants and Fields
 
+        private static readonly string[] ExcludeColumns = new[]
+            {
+                "contentId", "title", "folderPath"
+            };
+
         private static readonly ILog Log = LogManager.GetLogger<MetadataDestination>();
 
         #endregion
@@ -64,13 +69,13 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         public override bool Receive(DataTable data)
         {
-            Log.InfoFormat("Beginning Ektron metadata update from data table '{0}'", data.TableName);
+            Log.InfoFormat("==> Beginning Ektron metadata update from data table '{0}'", data.TableName);
 
             Data = data;
             ValidateTable();
             UpdateMetaData();
-            
-            Log.InfoFormat("Ektron metadata update from data table '{0}' is done.", data.TableName);
+
+            Log.InfoFormat("==| Ektron metadata update from data table '{0}' is done.", data.TableName);
             return true;
         }
 
@@ -82,11 +87,14 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             criteria.ReturnMetadata = true;
             base.GetExistingContentFilters(criteria);
+            DestinationHelper.BuildTitleAndPathGroups(Data, criteria);
         }
 
         protected override bool TableHasValidSchema()
         {
-            bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "contentId", typeof(long));
+            bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "contentId", typeof(long))
+                                       && DestinationHelper.HasColumn(Data, "folderPath", typeof(string))
+                                       && DestinationHelper.HasColumn(Data, "title", typeof(string));
             Log.DebugFormat("Table has valid schema: {0}", tableHasValidSchema);
             return tableHasValidSchema;
         }
@@ -99,7 +107,9 @@ namespace GoodlyFere.Import.Ektron.Destination
                 Log.InfoFormat("Updating metadata for '{0}' with id {1}", row["title"], row["contentId"]);
                 ContentData item = contentItems.Single(ci => (long)row["contentId"] == ci.Id);
 
-                foreach (DataColumn column in Data.Columns.Cast<DataColumn>().Where(dc => dc.ColumnName != "contentId"))
+                foreach (
+                    DataColumn column in
+                        Data.Columns.Cast<DataColumn>().Where(dc => !ExcludeColumns.Contains(dc.ColumnName)))
                 {
                     ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
                     if (metaData == null)

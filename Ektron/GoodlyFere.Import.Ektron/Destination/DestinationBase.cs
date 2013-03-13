@@ -124,7 +124,10 @@ namespace GoodlyFere.Import.Ektron.Destination
                 group.AddFilter(ContentProperty.Id, CriteriaFilterOperator.EqualTo, row["contentid"]);
             }
 
-            criteria.FilterGroups.Add(group);
+            if (group.Filters.Any())
+            {
+                criteria.FilterGroups.Add(group);
+            }
         }
 
         protected bool TableHasRows()
@@ -163,13 +166,20 @@ namespace GoodlyFere.Import.Ektron.Destination
         private List<ContentData> LookForExistingContent()
         {
             ContentCriteria criteria = new ContentCriteria();
+            criteria.PagingInfo.RecordsPerPage = 10000;
             criteria.Condition = LogicalOperation.Or;
             GetExistingContentFilters(criteria);
 
+            // remove groups with no filters, they mess up search
+            CriteriaFilterGroup<ContentProperty>[] groupsWithFilters = criteria.FilterGroups.Where(fg => fg.Filters.Any()).ToArray();
+            criteria.FilterGroups.Clear();
+            criteria.FilterGroups.AddRange(groupsWithFilters);
+
             List<ContentData> contentList = new List<ContentData>();
-            if (criteria.FilterGroups.Count > 10)
+            if (criteria.FilterGroups.Count() > 10)
             {
                 ContentCriteria piecemealCriteria = new ContentCriteria();
+                criteria.PagingInfo.RecordsPerPage = 10000;
                 criteria.Condition = LogicalOperation.Or;
                 for (int i = 0; i < criteria.FilterGroups.Count % 10 + 1; i++)
                 {
