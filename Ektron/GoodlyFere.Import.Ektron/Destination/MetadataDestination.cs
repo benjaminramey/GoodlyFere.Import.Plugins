@@ -101,31 +101,39 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private void UpdateMetaData()
         {
-            List<ContentData> contentItems = GetExistingContent();
-            foreach (DataRow row in Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()))
-            {
-                Log.InfoFormat("Updating metadata for '{0}' with id {1}", row["title"], row["contentId"]);
-                ContentData item = contentItems.Single(ci => (long)row["contentId"] == ci.Id);
+            List<ContentData> existingItems = GetExistingContent();
 
-                foreach (
-                    DataColumn column in
-                        Data.Columns.Cast<DataColumn>().Where(dc => !ExcludeColumns.Contains(dc.ColumnName)))
+            foreach (DataRow row in Data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
+            {
+                ContentData item = CheckForExistingItem(row, existingItems);
+                if (item != null)
                 {
-                    ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
-                    if (metaData == null)
+                    Log.InfoFormat("Updating metadata for '{0}' with id {1}", row["title"], row["contentId"]);
+
+                    foreach (
+                        DataColumn column in
+                            Data.Columns.Cast<DataColumn>().Where(dc => !ExcludeColumns.Contains(dc.ColumnName)))
                     {
-                        Log.WarnFormat(
-                            "Metadata named '{0}' not found for content item {1}",
-                            column.ColumnName,
-                            item.Id);
-                        continue;
+                        ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
+                        if (metaData == null)
+                        {
+                            Log.WarnFormat(
+                                "Metadata named '{0}' not found for content item {1}",
+                                column.ColumnName,
+                                item.Id);
+                            continue;
+                        }
+
+                        Log.InfoFormat("Setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
+                        metaData.Text = row[column].ToString();
                     }
 
-                    Log.InfoFormat("Setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
-                    metaData.Text = row[column].ToString();
+                    ContentManager.Update(item);
                 }
-
-                ContentManager.Update(item);
+                else
+                {
+                    Log.WarnFormat("Could not find existing item for '{0}' in path '{1}'", row["title"], row["folderPath"]);
+                }
             }
         }
 

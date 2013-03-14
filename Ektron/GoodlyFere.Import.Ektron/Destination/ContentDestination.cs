@@ -38,7 +38,6 @@ using Ektron.Cms;
 using Ektron.Cms.Common;
 using Ektron.Cms.Content;
 using Ektron.Cms.Framework.Organization;
-using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
@@ -200,22 +199,6 @@ namespace GoodlyFere.Import.Ektron.Destination
                     row["contentId"],
                     ex.Message);
             }
-        }
-
-        private static ContentData CheckForExistingItem(DataRow row, IEnumerable<ContentData> existingItems)
-        {
-            Log.InfoFormat("Checking if '{0}' is an existing item.", row["title"]);
-            if (row.IsNew())
-            {
-                Log.InfoFormat("'{0}' has no contentId, checking by title and folder path.", row["title"]);
-                string title = row["title"].ToString();
-                string folderPath = row["folderPath"].ToString();
-
-                return existingItems.FirstOrDefault(ei => ei.Title == title && ei.Path == folderPath);
-            }
-
-            long id = (long)row["contentId"];
-            return existingItems.FirstOrDefault(ei => ei.Id == id);
         }
 
         private void SaveOrUpdateContentItems()

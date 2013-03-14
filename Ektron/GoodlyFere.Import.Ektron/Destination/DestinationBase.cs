@@ -40,7 +40,6 @@ using Ektron.Cms.Common;
 using Ektron.Cms.Content;
 using Ektron.Cms.Framework.Content;
 using Ektron.Cms.Framework.User;
-using Ektron.Cms.Search.Expressions;
 using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Interfaces;
 
@@ -88,6 +87,22 @@ namespace GoodlyFere.Import.Ektron.Destination
         #endregion
 
         #region Methods
+
+        protected static ContentData CheckForExistingItem(DataRow row, IEnumerable<ContentData> existingItems)
+        {
+            Log.InfoFormat("Checking if '{0}' is an existing item.", row["title"]);
+            if (row.IsNew())
+            {
+                Log.InfoFormat("'{0}' has no contentId, checking by title and folder path.", row["title"]);
+                string title = row["title"].ToString();
+                string folderPath = row["folderPath"].ToString();
+
+                return existingItems.FirstOrDefault(ei => ei.Title == title && ei.Path == folderPath);
+            }
+
+            long id = (long)row["contentId"];
+            return existingItems.FirstOrDefault(ei => ei.Id == id);
+        }
 
         protected string Authenticate()
         {
@@ -171,7 +186,8 @@ namespace GoodlyFere.Import.Ektron.Destination
             GetExistingContentFilters(criteria);
 
             // remove groups with no filters, they mess up search
-            CriteriaFilterGroup<ContentProperty>[] groupsWithFilters = criteria.FilterGroups.Where(fg => fg.Filters.Any()).ToArray();
+            CriteriaFilterGroup<ContentProperty>[] groupsWithFilters =
+                criteria.FilterGroups.Where(fg => fg.Filters.Any()).ToArray();
             criteria.FilterGroups.Clear();
             criteria.FilterGroups.AddRange(groupsWithFilters);
 
