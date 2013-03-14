@@ -86,6 +86,7 @@
   <ItemGroup>
     <Compile Include="Destination\DestinationBase.cs" />
     <Compile Include="Destination\MetadataDestination.cs" />
+    <Compile Include="Destination\TaxonomyDestination.cs" />
     <Compile Include="Tools\ContentRowComparer.cs" />
     <Compile Include="Destination\ContentDestination.cs" />
     <Compile Include="Destination\SmartFormDestination.cs" />

@@ -66,14 +66,16 @@ namespace GoodlyFere.Import.Ektron.Destination
             _adminUserName = adminUserName;
             _adminPassword = adminPassword;
 
-            string authToken = Authenticate();
+            AuthToken = Authenticate();
             ContentManager = new ContentManager();
-            ContentManager.RequestInformation.AuthenticationToken = authToken;
+            ContentManager.RequestInformation.AuthenticationToken = AuthToken;
         }
 
         #endregion
 
         #region Properties
+
+        protected string AuthToken { get; set; }
 
         protected ContentManager ContentManager { get; private set; }
         protected DataTable Data { get; set; }

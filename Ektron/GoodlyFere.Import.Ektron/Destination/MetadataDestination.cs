@@ -36,7 +36,6 @@ using System;
 using Common.Logging;
 using Ektron.Cms;
 using Ektron.Cms.Content;
-using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
@@ -49,7 +48,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private static readonly string[] ExcludeColumns = new[]
             {
-                "contentId", "title", "folderPath"
+                "contentId", "title", "folderPath", "smartFormId"
             };
 
         private static readonly ILog Log = LogManager.GetLogger<MetadataDestination>();
@@ -61,6 +60,18 @@ namespace GoodlyFere.Import.Ektron.Destination
         public MetadataDestination(string ektronServicesUrl, string adminUserName, string adminPassword)
             : base(ektronServicesUrl, adminUserName, adminPassword)
         {
+        }
+
+        #endregion
+
+        #region Properties
+
+        private IEnumerable<DataColumn> MetadataColumns
+        {
+            get
+            {
+                return Data.Columns.Cast<DataColumn>().Where(dc => !ExcludeColumns.Contains(dc.ColumnName));
+            }
         }
 
         #endregion
@@ -108,11 +119,9 @@ namespace GoodlyFere.Import.Ektron.Destination
                 ContentData item = CheckForExistingItem(row, existingItems);
                 if (item != null)
                 {
-                    Log.InfoFormat("Updating metadata for '{0}' with id {1}", row["title"], row["contentId"]);
+                    Log.InfoFormat("Updating metadata for '{0}' with id {1}", item.Title, item.Id);
 
-                    foreach (
-                        DataColumn column in
-                            Data.Columns.Cast<DataColumn>().Where(dc => !ExcludeColumns.Contains(dc.ColumnName)))
+                    foreach (DataColumn column in MetadataColumns)
                     {
                         ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
                         if (metaData == null)
@@ -132,7 +141,8 @@ namespace GoodlyFere.Import.Ektron.Destination
                 }
                 else
                 {
-                    Log.WarnFormat("Could not find existing item for '{0}' in path '{1}'", row["title"], row["folderPath"]);
+                    Log.WarnFormat(
+                        "Could not find existing item for '{0}' in path '{1}'", row["title"], row["folderPath"]);
                 }
             }
         }
