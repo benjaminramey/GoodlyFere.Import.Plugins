@@ -9,6 +9,7 @@ using Ektron.Cms;
 using Ektron.Cms.Common;
 using Ektron.Cms.Content;
 using Ektron.Cms.Organization;
+using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
@@ -21,7 +22,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private static readonly string[] ExcludeColumns = new[]
             {
-                "contentId", "title", "folderPath", "smartFormId"
+                "contentId", "title", "folderPath", "smartFormId", "html"
             };
 
         private static readonly ILog Log = LogManager.GetLogger<TaxonomyDestination>();
@@ -91,22 +92,21 @@ namespace GoodlyFere.Import.Ektron.Destination
         }
 
         private static TaxonomyItemData CheckForExistingTaxonomyDataItem(
-            List<TaxonomyItemData> existingDataItems, TaxonomyData tax, ContentData item)
+            List<TaxonomyItemData> existingDataItems, TaxonomyData tax, DataRow row)
         {
             TaxonomyItemData data = existingDataItems.FirstOrDefault(d => d.TaxonomyId == tax.Id);
 
             if (data != null)
             {
-                Log.InfoFormat(
-                    "Found an existing taxonomy data item for taxonomy '{0}' on '{1}'",
-                    tax.Name,
-                    item.Title);
+                row.LogContentInfo(
+                    "Found an existing taxonomy data item for taxonomy '{0}'",
+                    tax.Name);
             }
             else
             {
                 data = new TaxonomyItemData();
-                Log.InfoFormat(
-                    "Did not find an existing taxonomy data item for taxonomy '{0}' on '{1}'", tax.Name, item.Title);
+                row.LogContentInfo(
+                    "Did not find an existing taxonomy data item for taxonomy '{0}'", tax.Name);
             }
             return data;
         }
@@ -116,7 +116,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             TaxonomyItemCriteria itemCriteria = new TaxonomyItemCriteria();
             itemCriteria.AddFilter(TaxonomyItemProperty.ItemId, CriteriaFilterOperator.EqualTo, item.Id);
             List<TaxonomyItemData> existingDataItems = _taxItemManager.GetList(itemCriteria);
-            Log.InfoFormat("Found {0} existing taxonomy data items for '{1}'", existingDataItems.Count, item.Title);
+            Log.InfoFormat("{1}: found {0} existing taxonomy data items", existingDataItems.Count, item.Title);
             return existingDataItems;
         }
 
@@ -129,7 +129,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 ContentData item = CheckForExistingItem(row, existingItems);
                 if (item != null)
                 {
-                    Log.InfoFormat("Updating taxonomy for '{0}' with id {1}", item.Title, item.Id);
+                    row.LogContentInfo("updating taxonomy for id {0}", item.Id);
                     List<TaxonomyItemData> existingDataItems = FindExistingTaxonomyItemsForContent(item);
 
                     foreach (DataColumn column in TaxonomyColumns)
@@ -137,16 +137,17 @@ namespace GoodlyFere.Import.Ektron.Destination
                         string[] taxPaths = row[column].ToString().Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string taxPath in taxPaths)
                         {
-                            Log.InfoFormat("Setting taxonomy '{0}' on '{1}'", taxPath, item.Title);
+                            row.LogContentInfo("setting taxonomy '{0}'", taxPath);
                             TaxonomyData tax = _taxManager.GetItem(taxPath);
 
-                            if (tax == null)
+                            if (tax == null || tax.Id <= 0)
                             {
                                 Log.WarnFormat("Could not find taxonomy with path '{0}'", taxPath);
                                 continue;
                             }
 
-                            TaxonomyItemData data = CheckForExistingTaxonomyDataItem(existingDataItems, tax, item);
+                            Log.InfoFormat("Found taxonomy '{0}' with id {1}", taxPath, tax.Id);
+                            TaxonomyItemData data = CheckForExistingTaxonomyDataItem(existingDataItems, tax, row);
                             data.TaxonomyId = tax.Id;
                             data.ItemId = item.Id;
                             data.ItemType = EkEnumeration.TaxonomyItemType.Content;
@@ -156,8 +157,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 }
                 else
                 {
-                    Log.WarnFormat(
-                        "Could not find existing item for '{0}' in path '{1}'", row["title"], row["folderPath"]);
+                    row.LogContentError("could not find existing item in path '{0}'", row["folderPath"]);
                 }
             }
         }

@@ -38,6 +38,7 @@ using Ektron.Cms;
 using Ektron.Cms.Common;
 using Ektron.Cms.Content;
 using Ektron.Cms.Framework.Organization;
+using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
@@ -83,7 +84,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected static FolderData GetFolderData(string folderPath)
         {
-            Log.InfoFormat("Getting folder data for folder with path '{0}'", folderPath);
+            Log.InfoFormat("Getting folder with path '{0}'", folderPath);
 
             FolderManager fm = new FolderManager();
             FolderCriteria folderCrit = new FolderCriteria();
@@ -105,12 +106,12 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected long GetFolderId(DataRow row)
         {
-            Log.InfoFormat("Getting folder id for folder with name '{0}'", row["folderPath"]);
+            Log.InfoFormat("Getting folder id with path '{0}'", row["folderPath"]);
 
             string folderPath = row["folderPath"].ToString();
             if (_folderIds.ContainsKey(folderPath))
             {
-                Log.DebugFormat("Folder id was cached: {0}", _folderIds[folderPath]);
+                Log.InfoFormat("Folder id was cached: {0}", _folderIds[folderPath]);
                 return _folderIds[folderPath];
             }
 
@@ -118,11 +119,11 @@ namespace GoodlyFere.Import.Ektron.Destination
             if (folder != null)
             {
                 _folderIds.Add(folderPath, folder.Id);
-                Log.DebugFormat("Folder id was found and added to cache: {0}", folder.Id);
+                Log.InfoFormat("Folder id was found and added to cache: {0}", folder.Id);
                 return folder.Id;
             }
 
-            Log.DebugFormat("Did not find folder with path '{0}'", folderPath);
+            Log.ErrorFormat("Did not find folder with path '{0}'", folderPath);
             return -1;
         }
 
@@ -134,12 +135,12 @@ namespace GoodlyFere.Import.Ektron.Destination
         /// <param name="row">Row with content data.</param>
         protected virtual void SaveContent(DataRow row)
         {
-            Log.InfoFormat("Saving content with title '{0}' in folder '{1}'", row["title"], row["folderPath"]);
+            row.LogContentInfo("saving in folder '{0}'", row["folderPath"]);
             long folderId = GetFolderId(row);
 
             if (folderId <= 0)
             {
-                Log.WarnFormat("Can't save item '{0}' because no folder was found for it.", row["title"]);
+                row.LogContentWarn("can't save item because no folder was found for it.");
                 return;
             }
 
@@ -150,11 +151,11 @@ namespace GoodlyFere.Import.Ektron.Destination
             try
             {
                 ContentManager.Add(content);
-                Log.InfoFormat("'{0}' saved successfully with id {1}.", row["title"], content.Id);
+                row.LogContentInfo("saved successfully with id {0}.", content.Id);
             }
             catch (Exception ex)
             {
-                Log.ErrorFormat("Failed to save content with title '{0}'", ex, row["title"]);
+                row.LogContentError("failed to save.", ex);
             }
         }
 
@@ -170,7 +171,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                                        && DestinationHelper.HasColumn(Data, "folderPath", typeof(string))
                                        && DestinationHelper.HasColumn(Data, "title", typeof(string))
                                        && DestinationHelper.HasColumn(Data, "contentId", typeof(long));
-            Log.DebugFormat("Table has valid schema: {0}", tableHasValidSchema);
+            Log.InfoFormat("Table has valid schema: {0}", tableHasValidSchema);
             return tableHasValidSchema;
         }
 
@@ -182,20 +183,19 @@ namespace GoodlyFere.Import.Ektron.Destination
         /// <param name="existingItem">Existing content item to update.</param>
         protected virtual void UpdateContent(DataRow row, ContentData existingItem)
         {
-            Log.InfoFormat("Updating content with title '{0}' and id {1}", row["title"], row["contentId"]);
+            row.LogContentInfo("updating content with id {0}", row["contentId"]);
             SetContentFields(row, existingItem);
 
             try
             {
                 ContentManager.Update(existingItem);
-                Log.InfoFormat("'{0}' updated successfully with id {1}.", row["title"], existingItem.Id);
+                row.LogContentInfo("updated successfully with id {0}.", existingItem.Id);
             }
             catch (Exception ex)
             {
-                Log.ErrorFormat(
-                    "Failed to update content with title '{0}' and id {1}: {2}",
+                row.LogContentError(
+                    "failed to update with id {0}: {1}",
                     ex,
-                    row["title"],
                     row["contentId"],
                     ex.Message);
             }
@@ -210,12 +210,12 @@ namespace GoodlyFere.Import.Ektron.Destination
                 var existingItem = CheckForExistingItem(row, existingItems);
                 if (existingItem != null)
                 {
-                    Log.InfoFormat("'{0}' exists, going to update.", row["title"]);
+                    row.LogContentInfo("exists, going to update.");
                     UpdateContent(row, existingItem);
                 }
                 else
                 {
-                    Log.InfoFormat("'{0}' does not exist, going to save.", row["title"]);
+                    row.LogContentInfo("does not exist, going to save.");
                     SaveContent(row);
                 }
             }

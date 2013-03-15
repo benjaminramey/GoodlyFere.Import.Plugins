@@ -36,6 +36,7 @@ using System;
 using Common.Logging;
 using Ektron.Cms;
 using Ektron.Cms.Content;
+using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
 #endregion
@@ -48,7 +49,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private static readonly string[] ExcludeColumns = new[]
             {
-                "contentId", "title", "folderPath", "smartFormId"
+                "contentId", "title", "folderPath", "smartFormId", "html"
             };
 
         private static readonly ILog Log = LogManager.GetLogger<MetadataDestination>();
@@ -119,21 +120,20 @@ namespace GoodlyFere.Import.Ektron.Destination
                 ContentData item = CheckForExistingItem(row, existingItems);
                 if (item != null)
                 {
-                    Log.InfoFormat("Updating metadata for '{0}' with id {1}", item.Title, item.Id);
+                    row.LogContentInfo("updating metadata for id {0}", item.Id);
 
                     foreach (DataColumn column in MetadataColumns)
                     {
                         ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
                         if (metaData == null)
                         {
-                            Log.WarnFormat(
-                                "Metadata named '{0}' not found for content item {1}",
-                                column.ColumnName,
-                                item.Id);
+                            row.LogContentWarn(
+                                "metadata named '{0}' not found",
+                                column.ColumnName);
                             continue;
                         }
 
-                        Log.InfoFormat("Setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
+                        row.LogContentInfo("setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
                         metaData.Text = row[column].ToString();
                     }
 
@@ -141,8 +141,8 @@ namespace GoodlyFere.Import.Ektron.Destination
                 }
                 else
                 {
-                    Log.WarnFormat(
-                        "Could not find existing item for '{0}' in path '{1}'", row["title"], row["folderPath"]);
+                    row.LogContentError("could not find existing item in path '{0}'",
+                        row["folderPath"]);
                 }
             }
         }

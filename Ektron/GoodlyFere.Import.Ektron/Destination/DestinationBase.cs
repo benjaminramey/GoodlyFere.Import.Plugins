@@ -92,18 +92,31 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected static ContentData CheckForExistingItem(DataRow row, IEnumerable<ContentData> existingItems)
         {
-            Log.InfoFormat("Checking if '{0}' is an existing item.", row["title"]);
+            row.LogContentInfo("checking for existence in ektron.");
+            ContentData item;
+
             if (row.IsNew())
             {
-                Log.InfoFormat("'{0}' has no contentId, checking by title and folder path.", row["title"]);
+                row.LogContentInfo("no contentId found, checking by title and folder path.");
                 string title = row["title"].ToString();
                 string folderPath = row["folderPath"].ToString();
 
-                return existingItems.FirstOrDefault(ei => ei.Title == title && ei.Path == folderPath);
+                item = existingItems.FirstOrDefault(ei => ei.Title == title && ei.Path == folderPath);
+            }
+            else
+            {
+                long id = (long)row["contentId"];
+                item = existingItems.FirstOrDefault(ei => ei.Id == id);
             }
 
-            long id = (long)row["contentId"];
-            return existingItems.FirstOrDefault(ei => ei.Id == id);
+            if (item != null)
+            {
+                row.LogContentInfo("found existing item.");
+            }
+            else
+            {
+                row.LogContentWarn("did not find existing item.");
+            }
         }
 
         protected string Authenticate()
@@ -150,7 +163,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         protected bool TableHasRows()
         {
             bool tableHasRows = Data.Rows.Count > 0;
-            Log.DebugFormat("Data table has rows: {0}", tableHasRows);
+            Log.InfoFormat("Data table has rows: {0}", tableHasRows);
             return tableHasRows;
         }
 

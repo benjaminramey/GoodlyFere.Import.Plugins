@@ -71,7 +71,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             bool hasValidSchema = base.TableHasValidSchema()
                                   && DestinationHelper.HasColumn(Data, "smartFormId", typeof(long));
 
-            Log.DebugFormat("Data table has valid schema: {0}", hasValidSchema);
+            Log.InfoFormat("Data table has valid schema: {0}", hasValidSchema);
             return hasValidSchema;
         }
 
