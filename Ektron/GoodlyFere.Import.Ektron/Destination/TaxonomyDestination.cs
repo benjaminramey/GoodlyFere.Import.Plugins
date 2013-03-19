@@ -65,7 +65,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
             Data = data;
             ValidateTable();
-            UpdateTaxonomy();
+            SaveOrUpdateContentItems();
 
             Log.InfoFormat("==| Ektron taxonomy update from data table '{0}' is done.", data.TableName);
             return true;
@@ -82,12 +82,29 @@ namespace GoodlyFere.Import.Ektron.Destination
             DestinationHelper.BuildTitleAndPathGroups(Data, criteria);
         }
 
+        protected override void RowGroupSaveOrUpdate(List<DataRow> dataRows, List<ContentData> existingItems)
+        {
+            foreach (DataRow row in dataRows)
+            {
+                ContentData item = CheckForExistingItem(row, existingItems);
+                if (item != null)
+                {
+                    row.LogContentInfo("updating taxonomy for id {0}", item.Id);
+                    UpdateItemTaxonomies(item, row);
+                }
+                else
+                {
+                    row.LogContentError("could not find existing item in path '{0}'", row["folderPath"]);
+                }
+            }
+        }
+
         protected override bool TableHasValidSchema()
         {
             bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "contentId", typeof(long))
                                        && DestinationHelper.HasColumn(Data, "folderPath", typeof(string))
                                        && DestinationHelper.HasColumn(Data, "title", typeof(string));
-            Log.DebugFormat("Table has valid schema: {0}", tableHasValidSchema);
+            Log.InfoFormat("Table has valid schema: {0}", tableHasValidSchema);
             return tableHasValidSchema;
         }
 
@@ -120,44 +137,30 @@ namespace GoodlyFere.Import.Ektron.Destination
             return existingDataItems;
         }
 
-        private void UpdateTaxonomy()
+        private void UpdateItemTaxonomies(ContentData item, DataRow row)
         {
-            List<ContentData> existingItems = GetExistingContent();
+            List<TaxonomyItemData> existingDataItems = FindExistingTaxonomyItemsForContent(item);
 
-            foreach (DataRow row in Data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
+            foreach (DataColumn column in TaxonomyColumns)
             {
-                ContentData item = CheckForExistingItem(row, existingItems);
-                if (item != null)
+                string[] taxPaths = row[column].ToString().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string taxPath in taxPaths)
                 {
-                    row.LogContentInfo("updating taxonomy for id {0}", item.Id);
-                    List<TaxonomyItemData> existingDataItems = FindExistingTaxonomyItemsForContent(item);
+                    row.LogContentInfo("setting taxonomy '{0}'", taxPath);
+                    TaxonomyData tax = _taxManager.GetItem(taxPath);
 
-                    foreach (DataColumn column in TaxonomyColumns)
+                    if (tax == null || tax.Id <= 0)
                     {
-                        string[] taxPaths = row[column].ToString().Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (string taxPath in taxPaths)
-                        {
-                            row.LogContentInfo("setting taxonomy '{0}'", taxPath);
-                            TaxonomyData tax = _taxManager.GetItem(taxPath);
-
-                            if (tax == null || tax.Id <= 0)
-                            {
-                                Log.WarnFormat("Could not find taxonomy with path '{0}'", taxPath);
-                                continue;
-                            }
-
-                            Log.InfoFormat("Found taxonomy '{0}' with id {1}", taxPath, tax.Id);
-                            TaxonomyItemData data = CheckForExistingTaxonomyDataItem(existingDataItems, tax, row);
-                            data.TaxonomyId = tax.Id;
-                            data.ItemId = item.Id;
-                            data.ItemType = EkEnumeration.TaxonomyItemType.Content;
-                            _taxItemManager.Add(data);
-                        }
+                        Log.WarnFormat("Could not find taxonomy with path '{0}'", taxPath);
+                        continue;
                     }
-                }
-                else
-                {
-                    row.LogContentError("could not find existing item in path '{0}'", row["folderPath"]);
+
+                    Log.InfoFormat("Found taxonomy '{0}' with id {1}", taxPath, tax.Id);
+                    TaxonomyItemData data = CheckForExistingTaxonomyDataItem(existingDataItems, tax, row);
+                    data.TaxonomyId = tax.Id;
+                    data.ItemId = item.Id;
+                    data.ItemType = EkEnumeration.TaxonomyItemType.Content;
+                    _taxItemManager.Add(data);
                 }
             }
         }

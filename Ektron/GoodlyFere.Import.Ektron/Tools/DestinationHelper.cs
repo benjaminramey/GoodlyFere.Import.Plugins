@@ -30,6 +30,7 @@
 #region Usings
 
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Ektron.Cms.Common;
@@ -58,15 +59,31 @@ namespace GoodlyFere.Import.Ektron.Tools
         {
             foreach (DataRow row in data.Rows.Cast<DataRow>().Where(dr => dr.IsNew()))
             {
-                CriteriaFilterGroup<ContentProperty> group = new CriteriaFilterGroup<ContentProperty>();
-                @group.Condition = LogicalOperation.And;
+                CriteriaFilterGroup<ContentProperty> critGroup = new CriteriaFilterGroup<ContentProperty>();
+                critGroup.Condition = LogicalOperation.And;
 
-                @group.AddFilter(ContentProperty.Title, CriteriaFilterOperator.EqualTo, row["title"].ToString());
-                @group.AddFilter(
-                    ContentProperty.Path, CriteriaFilterOperator.EqualTo, row["folderPath"].ToString());
+                critGroup.AddFilter(
+                    ContentProperty.Title,
+                    CriteriaFilterOperator.EqualTo,
+                    row["title"].ToString());
 
-                criteria.FilterGroups.Add(@group);
+                critGroup.AddFilter(
+                    ContentProperty.Path,
+                    CriteriaFilterOperator.EqualTo,
+                    row["folderPath"].ToString());
+
+                criteria.FilterGroups.Add(critGroup);
             }
+        }
+
+        internal static IEnumerable<List<DataRow>> MakeThreadGroups(IEnumerable<DataRow> dataRows)
+        {
+            IEnumerable<DataRow> distinctRows = dataRows.Distinct(new ContentRowComparer());
+            IEnumerable<List<DataRow>> threadGroups = distinctRows
+                .Select((r, i) => new { Index = i, Row = r })
+                .GroupBy(obj => Math.Truncate(obj.Index / 10.0))
+                .Select(grp => grp.Select(v => v.Row).ToList());
+            return threadGroups;
         }
 
         #endregion

@@ -85,7 +85,7 @@ namespace GoodlyFere.Import.Ektron.Destination
 
             Data = data;
             ValidateTable();
-            UpdateMetaData();
+            SaveOrUpdateContentItems();
 
             Log.InfoFormat("==| Ektron metadata update from data table '{0}' is done.", data.TableName);
             return true;
@@ -102,49 +102,52 @@ namespace GoodlyFere.Import.Ektron.Destination
             DestinationHelper.BuildTitleAndPathGroups(Data, criteria);
         }
 
-        protected override bool TableHasValidSchema()
+        protected override void RowGroupSaveOrUpdate(List<DataRow> dataRows, List<ContentData> existingItems)
         {
-            bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "contentId", typeof(long))
-                                       && DestinationHelper.HasColumn(Data, "folderPath", typeof(string))
-                                       && DestinationHelper.HasColumn(Data, "title", typeof(string));
-            Log.DebugFormat("Table has valid schema: {0}", tableHasValidSchema);
-            return tableHasValidSchema;
-        }
-
-        private void UpdateMetaData()
-        {
-            List<ContentData> existingItems = GetExistingContent();
-
-            foreach (DataRow row in Data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
+            foreach (var row in dataRows)
             {
                 ContentData item = CheckForExistingItem(row, existingItems);
                 if (item != null)
                 {
                     row.LogContentInfo("updating metadata for id {0}", item.Id);
-
-                    foreach (DataColumn column in MetadataColumns)
-                    {
-                        ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
-                        if (metaData == null)
-                        {
-                            row.LogContentWarn(
-                                "metadata named '{0}' not found",
-                                column.ColumnName);
-                            continue;
-                        }
-
-                        row.LogContentInfo("setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
-                        metaData.Text = row[column].ToString();
-                    }
-
-                    ContentManager.Update(item);
+                    UpdateItemMetadata(item, row);
                 }
                 else
                 {
-                    row.LogContentError("could not find existing item in path '{0}'",
+                    row.LogContentError(
+                        "could not find existing item in path '{0}'",
                         row["folderPath"]);
                 }
             }
+        }
+
+        protected override bool TableHasValidSchema()
+        {
+            bool tableHasValidSchema = DestinationHelper.HasColumn(Data, "contentId", typeof(long))
+                                       && DestinationHelper.HasColumn(Data, "folderPath", typeof(string))
+                                       && DestinationHelper.HasColumn(Data, "title", typeof(string));
+            Log.InfoFormat("Table has valid schema: {0}", tableHasValidSchema);
+            return tableHasValidSchema;
+        }
+
+        private void UpdateItemMetadata(ContentData item, DataRow row)
+        {
+            foreach (DataColumn column in MetadataColumns)
+            {
+                ContentMetaData metaData = item.MetaData.SingleOrDefault(cmd => cmd.Name == column.ColumnName);
+                if (metaData == null)
+                {
+                    row.LogContentWarn(
+                        "metadata named '{0}' not found",
+                        column.ColumnName);
+                    continue;
+                }
+
+                row.LogContentInfo("setting metadata field '{0}' to '{1}'", metaData.Name, row[column]);
+                metaData.Text = row[column].ToString();
+            }
+
+            DoContentUpdate(row, item);
         }
 
         #endregion

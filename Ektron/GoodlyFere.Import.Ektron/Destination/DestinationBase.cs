@@ -34,6 +34,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
+using System.ServiceModel;
+using System.Threading;
 using Common.Logging;
 using Ektron.Cms;
 using Ektron.Cms.Common;
@@ -41,6 +43,7 @@ using Ektron.Cms.Content;
 using Ektron.Cms.Framework.Content;
 using Ektron.Cms.Framework.User;
 using GoodlyFere.Import.Ektron.Extensions;
+using GoodlyFere.Import.Ektron.Tools;
 using GoodlyFere.Import.Interfaces;
 
 #endregion
@@ -51,9 +54,14 @@ namespace GoodlyFere.Import.Ektron.Destination
     {
         #region Constants and Fields
 
+        private const int MaxGroupsInCriteria = 20;
+
         private static readonly ILog Log = LogManager.GetLogger<DestinationBase>();
         private readonly string _adminPassword;
         private readonly string _adminUserName;
+        private readonly object _authTokenLock = new object();
+        private readonly object _authenticatingLock = new object();
+        private bool _authenticating;
 
         #endregion
 
@@ -66,9 +74,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             _adminUserName = adminUserName;
             _adminPassword = adminPassword;
 
-            AuthToken = Authenticate();
-            ContentManager = new ContentManager();
-            ContentManager.RequestInformation.AuthenticationToken = AuthToken;
+            Authenticate();
         }
 
         #endregion
@@ -77,8 +83,28 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected string AuthToken { get; set; }
 
-        protected ContentManager ContentManager { get; private set; }
+        protected ContentManager ContentManager
+        {
+            get
+            {
+                ContentManager mgr = new ContentManager();
+                mgr.RequestInformation.AuthenticationToken = AuthToken;
+                return mgr;
+            }
+        }
+
         protected DataTable Data { get; set; }
+
+        protected bool HasAuthentication
+        {
+            get
+            {
+                lock (_authTokenLock)
+                {
+                    return !string.IsNullOrWhiteSpace(AuthToken);
+                }
+            }
+        }
 
         #endregion
 
@@ -115,16 +141,129 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
             else
             {
-                row.LogContentWarn("did not find existing item.");
+                row.LogContentInfo("did not find existing item.");
+            }
+
+            return item;
+        }
+
+        protected void Authenticate()
+        {
+            lock (_authenticatingLock)
+            {
+                if (_authenticating)
+                {
+                    return;
+                }
+
+                _authenticating = true;
+            }
+
+            Log.InfoFormat("Authenticating with username: {0} and password: {1}", _adminUserName, _adminPassword);
+
+            lock (_authTokenLock)
+            {
+                UserManager um = new UserManager();
+                AuthToken = um.Authenticate(_adminUserName, _adminPassword);
+            }
+
+            lock (_authenticatingLock)
+            {
+                _authenticating = false;
             }
         }
 
-        protected string Authenticate()
+        protected void DoContentAdd(DataRow row, ContentData content, short timeouts = 0, bool failOnFault = false)
         {
-            Log.InfoFormat("Authenticating with username: {0} and password: {1}", _adminUserName, _adminPassword);
+            try
+            {
+                if (HasAuthentication)
+                {
+                    ContentManager.Add(content);
+                    row.LogContentInfo("saved successfully with id {0}.", content.Id);
+                }
+                else
+                {
+                    row.LogContentWarn("does not have authentication.");
+                }
+            }
+            catch (TimeoutException te)
+            {
+                if (timeouts < 10)
+                {
+                    row.LogContentInfo("save timed out.  Trying again.");
+                    Thread.Sleep(1000);
+                    DoContentAdd(row, content, ++timeouts);
+                }
+                else
+                {
+                    row.LogContentError("failed to save.", te);
+                }
+            }
+            catch (FaultException fe)
+            {
+                if (!failOnFault
+                    && fe.Message.Contains("The current user does not have permission to carry out this request"))
+                {
+                    Authenticate();
+                    DoContentAdd(row, content, failOnFault: true);
+                }
+                else
+                {
+                    row.LogContentError("failed to save.", fe);
+                }
+            }
+            catch (Exception ex)
+            {
+                row.LogContentError("failed to save.", ex);
+            }
+        }
 
-            UserManager um = new UserManager();
-            return um.Authenticate(_adminUserName, _adminPassword);
+        protected void DoContentUpdate(
+            DataRow row, ContentData existingItem, short timeouts = 0, bool failOnFault = false)
+        {
+            try
+            {
+                if (HasAuthentication)
+                {
+                    ContentManager.Update(existingItem);
+                    row.LogContentInfo("updated successfully with id {0}.", existingItem.Id);
+                }
+                else
+                {
+                    row.LogContentWarn("does not have authentication.");
+                }
+            }
+            catch (TimeoutException te)
+            {
+                if (timeouts < 10)
+                {
+                    row.LogContentInfo("update timed out.  Trying again.");
+                    Thread.Sleep(1000);
+                    DoContentUpdate(row, existingItem, ++timeouts);
+                }
+                else
+                {
+                    LogUpdateError(row, te);
+                }
+            }
+            catch (FaultException fe)
+            {
+                if (!failOnFault
+                    && fe.Message.Contains("The current user does not have permission to carry out this request"))
+                {
+                    Authenticate();
+                    DoContentUpdate(row, existingItem, failOnFault: true);
+                }
+                else
+                {
+                    LogUpdateError(row, fe);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogUpdateError(row, ex);
+            }
         }
 
         protected List<ContentData> GetExistingContent()
@@ -134,11 +273,11 @@ namespace GoodlyFere.Import.Ektron.Destination
 
             if (existingItems.Count > 0)
             {
-                IEnumerable<long> rowIds =
-                    Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()).Select(dr => (long)dr["contentId"]);
-                IEnumerable<long> resultIds = existingItems.Select(c => c.Id);
-                IEnumerable<long> missingIds = rowIds.Except(resultIds);
-                Log.WarnFormat("IDs not found with search: {0}", string.Join(",", missingIds));
+                IEnumerable<string> rowTitles =
+                    Data.Rows.Cast<DataRow>().Select(dr => dr["title"].ToString());
+                IEnumerable<string> resultTitles = existingItems.Select(c => c.Title);
+                IEnumerable<string> missingTitles = rowTitles.Except(resultTitles);
+                Log.WarnFormat("Items not found with search: {0}", string.Join(",", missingTitles));
             }
 
             return existingItems;
@@ -158,6 +297,33 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 criteria.FilterGroups.Add(group);
             }
+        }
+
+        protected void ManageThreads(
+            IEnumerable<List<DataRow>> threadGroups,
+            List<ContentData> existingItems)
+        {
+            ThreadManager threadManager = new ThreadManager();
+            foreach (var threadGroupRows in threadGroups)
+            {
+                var rows = threadGroupRows;
+                Action action = () => RowGroupSaveOrUpdate(rows, existingItems);
+
+                threadManager.RunWithAction(action);
+            }
+
+            threadManager.WaitForCompletion();
+        }
+
+        protected abstract void RowGroupSaveOrUpdate(List<DataRow> rows, List<ContentData> existingItems);
+
+        protected void SaveOrUpdateContentItems()
+        {
+            Log.InfoFormat("Saving or updating each row.");
+            List<ContentData> existingItems = GetExistingContent();
+            IEnumerable<List<DataRow>> threadGroups = DestinationHelper.MakeThreadGroups(Data.Rows.Cast<DataRow>());
+
+            ManageThreads(threadGroups, existingItems);
         }
 
         protected bool TableHasRows()
@@ -187,6 +353,15 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
         }
 
+        private static void LogUpdateError(DataRow row, Exception ex)
+        {
+            row.LogContentError(
+                "failed to update with id {0}: {1}",
+                ex,
+                row["contentId"],
+                ex.Message);
+        }
+
         private static void SetServicesPath(string ektronServicesUrl)
         {
             Log.InfoFormat("Saving ektron services url: {0}", ektronServicesUrl);
@@ -195,36 +370,35 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         private List<ContentData> LookForExistingContent()
         {
-            ContentCriteria criteria = new ContentCriteria();
-            criteria.PagingInfo.RecordsPerPage = 10000;
-            criteria.Condition = LogicalOperation.Or;
+            ContentCriteria criteria = new ContentCriteria
+                {
+                    PagingInfo = { RecordsPerPage = 10000 },
+                    Condition = LogicalOperation.Or
+                };
             GetExistingContentFilters(criteria);
 
             // remove groups with no filters, they mess up search
             CriteriaFilterGroup<ContentProperty>[] groupsWithFilters =
                 criteria.FilterGroups.Where(fg => fg.Filters.Any()).ToArray();
-            criteria.FilterGroups.Clear();
-            criteria.FilterGroups.AddRange(groupsWithFilters);
 
             List<ContentData> contentList = new List<ContentData>();
-            if (criteria.FilterGroups.Count() > 10)
+            if (groupsWithFilters.Count() > MaxGroupsInCriteria)
             {
-                ContentCriteria piecemealCriteria = new ContentCriteria();
-                criteria.PagingInfo.RecordsPerPage = 10000;
-                criteria.Condition = LogicalOperation.Or;
-                for (int i = 0; i < criteria.FilterGroups.Count % 10 + 1; i++)
+                for (int i = 0; i < groupsWithFilters.Length / MaxGroupsInCriteria + 1; i++)
                 {
-                    var groups = criteria.FilterGroups.Skip(i * 10).Take(10).ToArray();
+                    var groups = groupsWithFilters.Skip(i * MaxGroupsInCriteria).Take(MaxGroupsInCriteria).ToArray();
                     if (groups.Any())
                     {
-                        piecemealCriteria.FilterGroups.Clear();
-                        piecemealCriteria.FilterGroups.AddRange(groups);
-                        contentList.AddRange(ContentManager.GetList(piecemealCriteria));
+                        criteria.FilterGroups.Clear();
+                        criteria.FilterGroups.AddRange(groups);
+                        contentList.AddRange(ContentManager.GetList(criteria));
                     }
                 }
             }
             else
             {
+                criteria.FilterGroups.Clear();
+                criteria.FilterGroups.AddRange(groupsWithFilters);
                 contentList.AddRange(ContentManager.GetList(criteria));
             }
 

@@ -50,6 +50,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         #region Constants and Fields
 
         private static readonly ILog Log = LogManager.GetLogger<ContentDestination>();
+        private readonly object _folderIdCacheLock = new object();
         private readonly Dictionary<string, long> _folderIds;
 
         #endregion
@@ -109,22 +110,43 @@ namespace GoodlyFere.Import.Ektron.Destination
             Log.InfoFormat("Getting folder id with path '{0}'", row["folderPath"]);
 
             string folderPath = row["folderPath"].ToString();
-            if (_folderIds.ContainsKey(folderPath))
+            lock (_folderIdCacheLock)
             {
-                Log.InfoFormat("Folder id was cached: {0}", _folderIds[folderPath]);
-                return _folderIds[folderPath];
-            }
+                if (_folderIds.ContainsKey(folderPath))
+                {
+                    Log.InfoFormat("Folder id was cached: {0}", _folderIds[folderPath]);
+                    return _folderIds[folderPath];
+                }
 
-            var folder = GetFolderData(folderPath);
-            if (folder != null)
-            {
-                _folderIds.Add(folderPath, folder.Id);
-                Log.InfoFormat("Folder id was found and added to cache: {0}", folder.Id);
-                return folder.Id;
+                var folder = GetFolderData(folderPath);
+                if (folder != null)
+                {
+                    _folderIds.Add(folderPath, folder.Id);
+                    Log.InfoFormat("Folder id was found and added to cache: {0}", folder.Id);
+                    return folder.Id;
+                }
             }
 
             Log.ErrorFormat("Did not find folder with path '{0}'", folderPath);
             return -1;
+        }
+
+        protected override void RowGroupSaveOrUpdate(List<DataRow> dataRows, List<ContentData> existingItems)
+        {
+            foreach (var row in dataRows)
+            {
+                var existingItem = CheckForExistingItem(row, existingItems);
+                if (existingItem != null)
+                {
+                    row.LogContentInfo("exists, going to update.");
+                    UpdateContent(row, existingItem);
+                }
+                else
+                {
+                    row.LogContentInfo("does not exist, going to save.");
+                    SaveContent(row);
+                }
+            }
         }
 
         /// <summary>
@@ -148,15 +170,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             SetContentFields(row, content);
             content.FolderId = folderId;
 
-            try
-            {
-                ContentManager.Add(content);
-                row.LogContentInfo("saved successfully with id {0}.", content.Id);
-            }
-            catch (Exception ex)
-            {
-                row.LogContentError("failed to save.", ex);
-            }
+            DoContentAdd(row, content);
         }
 
         protected virtual void SetContentFields(DataRow row, ContentData contentItem)
@@ -185,40 +199,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             row.LogContentInfo("updating content with id {0}", row["contentId"]);
             SetContentFields(row, existingItem);
-
-            try
-            {
-                ContentManager.Update(existingItem);
-                row.LogContentInfo("updated successfully with id {0}.", existingItem.Id);
-            }
-            catch (Exception ex)
-            {
-                row.LogContentError(
-                    "failed to update with id {0}: {1}",
-                    ex,
-                    row["contentId"],
-                    ex.Message);
-            }
-        }
-
-        private void SaveOrUpdateContentItems()
-        {
-            Log.InfoFormat("Determining whether to save or update each row.");
-            List<ContentData> existingItems = GetExistingContent();
-            foreach (var row in Data.Rows.Cast<DataRow>().Distinct(new ContentRowComparer()))
-            {
-                var existingItem = CheckForExistingItem(row, existingItems);
-                if (existingItem != null)
-                {
-                    row.LogContentInfo("exists, going to update.");
-                    UpdateContent(row, existingItem);
-                }
-                else
-                {
-                    row.LogContentInfo("does not exist, going to save.");
-                    SaveContent(row);
-                }
-            }
+            DoContentUpdate(row, existingItem);
         }
 
         #endregion
