@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.ServiceModel;
+using System.Threading;
 using Common.Logging;
 using Ektron.Cms;
 using Ektron.Cms.Common;
@@ -20,14 +22,17 @@ namespace GoodlyFere.Import.Ektron.Destination
     {
         #region Constants and Fields
 
+        private const string TaxonomySeparator = ";;";
+
         private static readonly string[] ExcludeColumns = new[]
             {
                 "contentId", "title", "folderPath", "smartFormId", "html"
             };
 
         private static readonly ILog Log = LogManager.GetLogger<TaxonomyDestination>();
-        private readonly ITaxonomyItemManager _taxItemManager;
-        private readonly ITaxonomyManager _taxManager;
+
+        private readonly Dictionary<string, TaxonomyData> _taxonomyData = new Dictionary<string, TaxonomyData>();
+        private readonly object _taxonomyDataLock = new object();
 
         #endregion
 
@@ -36,16 +41,31 @@ namespace GoodlyFere.Import.Ektron.Destination
         public TaxonomyDestination(string ektronServicesUrl, string adminUserName, string adminPassword)
             : base(ektronServicesUrl, adminUserName, adminPassword)
         {
-            _taxItemManager = ObjectFactory.GetTaxonomyItemManager();
-            _taxItemManager.RequestInformation.AuthenticationToken = AuthToken;
-
-            _taxManager = ObjectFactory.GetTaxonomyManager();
-            _taxManager.RequestInformation.AuthenticationToken = AuthToken;
         }
 
         #endregion
 
         #region Properties
+
+        private ITaxonomyItemManager TaxItemManager
+        {
+            get
+            {
+                ITaxonomyItemManager mgr = ObjectFactory.GetTaxonomyItemManager();
+                mgr.RequestInformation.AuthenticationToken = AuthToken;
+                return mgr;
+            }
+        }
+
+        private ITaxonomyManager TaxManager
+        {
+            get
+            {
+                ITaxonomyManager mgr = ObjectFactory.GetTaxonomyManager();
+                mgr.RequestInformation.AuthenticationToken = AuthToken;
+                return mgr;
+            }
+        }
 
         private IEnumerable<DataColumn> TaxonomyColumns
         {
@@ -109,7 +129,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         }
 
         private static TaxonomyItemData CheckForExistingTaxonomyDataItem(
-            List<TaxonomyItemData> existingDataItems, TaxonomyData tax, DataRow row)
+            IEnumerable<TaxonomyItemData> existingDataItems, TaxonomyData tax, DataRow row)
         {
             TaxonomyItemData data = existingDataItems.FirstOrDefault(d => d.TaxonomyId == tax.Id);
 
@@ -128,13 +148,77 @@ namespace GoodlyFere.Import.Ektron.Destination
             return data;
         }
 
+        private void DoUpdate(
+            TaxonomyItemData data, DataRow row, ContentData existingItem, short timeouts = 0, bool failOnFault = false)
+        {
+            try
+            {
+                if (HasAuthentication)
+                {
+                    TaxItemManager.Add(data);
+                    row.LogContentInfo("updated successfully with id {0}.", existingItem.Id);
+                }
+                else
+                {
+                    row.LogContentWarn("does not have authentication.");
+                }
+            }
+            catch (TimeoutException te)
+            {
+                if (timeouts < 10)
+                {
+                    row.LogContentInfo("update timed out.  Trying again.");
+                    Thread.Sleep(1000);
+                    DoUpdate(data, row, existingItem, ++timeouts);
+                }
+                else
+                {
+                    LogUpdateError(row, te);
+                }
+            }
+            catch (FaultException fe)
+            {
+                if (!failOnFault
+                    && fe.Message.Contains("The current user does not have permission to carry out this request"))
+                {
+                    Authenticate();
+                    DoUpdate(data, row, existingItem, failOnFault: true);
+                }
+                else
+                {
+                    LogUpdateError(row, fe);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogUpdateError(row, ex);
+            }
+        }
+
         private List<TaxonomyItemData> FindExistingTaxonomyItemsForContent(ContentData item)
         {
             TaxonomyItemCriteria itemCriteria = new TaxonomyItemCriteria();
             itemCriteria.AddFilter(TaxonomyItemProperty.ItemId, CriteriaFilterOperator.EqualTo, item.Id);
-            List<TaxonomyItemData> existingDataItems = _taxItemManager.GetList(itemCriteria);
+            List<TaxonomyItemData> existingDataItems = TaxItemManager.GetList(itemCriteria);
             Log.InfoFormat("{1}: found {0} existing taxonomy data items", existingDataItems.Count, item.Title);
             return existingDataItems;
+        }
+
+        private TaxonomyData GetTaxonomy(string taxPath)
+        {
+            lock (_taxonomyDataLock)
+            {
+                if (_taxonomyData.ContainsKey(taxPath))
+                {
+                    Log.InfoFormat("Taxonomy is cached: {0}", taxPath);
+                    return _taxonomyData[taxPath];
+                }
+
+                Log.InfoFormat("Taxonomy not cached: {0}", taxPath);
+                TaxonomyData taxData = TaxManager.GetItem(taxPath);
+                _taxonomyData.Add(taxPath, taxData);
+                return taxData;
+            }
         }
 
         private void UpdateItemTaxonomies(ContentData item, DataRow row)
@@ -143,11 +227,13 @@ namespace GoodlyFere.Import.Ektron.Destination
 
             foreach (DataColumn column in TaxonomyColumns)
             {
-                string[] taxPaths = row[column].ToString().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] taxPaths = row[column].ToString()
+                                               .Split(
+                                                   new[] { TaxonomySeparator }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string taxPath in taxPaths)
                 {
                     row.LogContentInfo("setting taxonomy '{0}'", taxPath);
-                    TaxonomyData tax = _taxManager.GetItem(taxPath);
+                    TaxonomyData tax = GetTaxonomy(taxPath);
 
                     if (tax == null || tax.Id <= 0)
                     {
@@ -160,9 +246,11 @@ namespace GoodlyFere.Import.Ektron.Destination
                     data.TaxonomyId = tax.Id;
                     data.ItemId = item.Id;
                     data.ItemType = EkEnumeration.TaxonomyItemType.Content;
-                    _taxItemManager.Add(data);
+                    DoUpdate(data, row, item);
                 }
             }
+
+            row.LogContentInfo("updated successfully with taxonomies.");
         }
 
         #endregion

@@ -15,7 +15,7 @@ namespace GoodlyFere.Import.Ektron.Tools
     {
         #region Constants and Fields
 
-        private const int MaxThreads = 20;
+        private const int MaxThreads = 30;
         private const int ThreadSleep = 10000;
 
         private static readonly ILog Log = LogManager.GetLogger<ThreadManager>();

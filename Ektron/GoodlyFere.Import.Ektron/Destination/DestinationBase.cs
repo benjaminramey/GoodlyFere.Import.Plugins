@@ -147,6 +147,15 @@ namespace GoodlyFere.Import.Ektron.Destination
             return item;
         }
 
+        protected static void LogUpdateError(DataRow row, Exception ex)
+        {
+            row.LogContentError(
+                "failed to update with id {0}: {1}",
+                ex,
+                row["contentId"],
+                ex.Message);
+        }
+
         protected void Authenticate()
         {
             lock (_authenticatingLock)
@@ -351,15 +360,6 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 throw new ArgumentException("Table has no rows.", "data");
             }
-        }
-
-        private static void LogUpdateError(DataRow row, Exception ex)
-        {
-            row.LogContentError(
-                "failed to update with id {0}: {1}",
-                ex,
-                row["contentId"],
-                ex.Message);
         }
 
         private static void SetServicesPath(string ektronServicesUrl)

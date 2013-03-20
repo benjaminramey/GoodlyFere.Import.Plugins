@@ -55,22 +55,6 @@ namespace GoodlyFere.Import.Ektron.Extensions
                    || (long)contentRow["contentId"] <= 0;
         }
 
-        public static void LogContentInfo(this DataRow row, string message, params object[] arguments)
-        {
-            Log.InfoFormat(
-                "{0}: {1}",
-                row["title"],
-                String.Format(message, arguments));
-        }
-
-        public static void LogContentWarn(this DataRow row, string message, params object[] arguments)
-        {
-            Log.WarnFormat(
-                "{0}: {1}",
-                row["title"],
-                String.Format(message, arguments));
-        }
-
         public static void LogContentError(this DataRow row, string message, params object[] arguments)
         {
             Log.ErrorFormat(
@@ -84,6 +68,22 @@ namespace GoodlyFere.Import.Ektron.Extensions
             Log.ErrorFormat(
                 "{0}: {1}",
                 ex,
+                row["title"],
+                String.Format(message, arguments));
+        }
+
+        public static void LogContentInfo(this DataRow row, string message, params object[] arguments)
+        {
+            Log.InfoFormat(
+                "{0}: {1}",
+                row["title"],
+                String.Format(message, arguments));
+        }
+
+        public static void LogContentWarn(this DataRow row, string message, params object[] arguments)
+        {
+            Log.WarnFormat(
+                "{0}: {1}",
                 row["title"],
                 String.Format(message, arguments));
         }
