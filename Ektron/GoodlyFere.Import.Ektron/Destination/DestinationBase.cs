@@ -298,12 +298,19 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 IEnumerable<string> rowTitles =
                     Data.Rows.Cast<DataRow>().Select(dr => DestinationHelper.EncodeTitle(dr["title"].ToString()));
-                IEnumerable<string> resultTitles = existingItems.Select(c => c.Title);
-                IEnumerable<string> missingTitles = rowTitles.Except(resultTitles).ToArray();
+                IEnumerable<string> resultTitles = existingItems.Select(c => c.Title).ToArray();
 
-                if (missingTitles.Any())
+                if (!resultTitles.Any())
                 {
-                    Log.WarnFormat("Items not found with search: {0}", string.Join(",", missingTitles));
+                    Log.WarnFormat("No existing items were found.");
+                }
+                else
+                {
+                    IEnumerable<string> missingTitles = rowTitles.Except(resultTitles).ToArray();
+                    if (missingTitles.Any())
+                    {
+                        Log.WarnFormat("Items not found with search: {0}", string.Join(",", missingTitles));
+                    }
                 }
             }
 
