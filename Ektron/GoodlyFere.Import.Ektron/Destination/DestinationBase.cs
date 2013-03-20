@@ -124,7 +124,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             if (row.IsNew())
             {
                 row.LogContentInfo("no contentId found, checking by title and folder path.");
-                string title = row["title"].ToString();
+                string title = DestinationHelper.EncodeTitle(row["title"].ToString());
                 string folderPath = row["folderPath"].ToString();
 
                 item = existingItems.FirstOrDefault(ei => ei.Title == title && ei.Path == folderPath);
@@ -214,12 +214,26 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (!failOnFault
                     && fe.Message.Contains("The current user does not have permission to carry out this request"))
                 {
+                    row.LogContentWarn("had authentication error.  Re-authenticating then retrying.");
                     Authenticate();
                     DoContentAdd(row, content, failOnFault: true);
                 }
                 else
                 {
                     row.LogContentError("failed to save.", fe);
+                }
+            }
+            catch (CommunicationException ce)
+            {
+                if (!failOnFault)
+                {
+                    row.LogContentWarn("had communication error.  Waiting and then retrying.");
+                    Thread.Sleep(10000);
+                    DoContentAdd(row, content, failOnFault: true);
+                }
+                else
+                {
+                    LogUpdateError(row, ce);
                 }
             }
             catch (Exception ex)
@@ -283,10 +297,14 @@ namespace GoodlyFere.Import.Ektron.Destination
             if (existingItems.Count > 0)
             {
                 IEnumerable<string> rowTitles =
-                    Data.Rows.Cast<DataRow>().Select(dr => dr["title"].ToString());
+                    Data.Rows.Cast<DataRow>().Select(dr => DestinationHelper.EncodeTitle(dr["title"].ToString()));
                 IEnumerable<string> resultTitles = existingItems.Select(c => c.Title);
-                IEnumerable<string> missingTitles = rowTitles.Except(resultTitles);
-                Log.WarnFormat("Items not found with search: {0}", string.Join(",", missingTitles));
+                IEnumerable<string> missingTitles = rowTitles.Except(resultTitles).ToArray();
+
+                if (missingTitles.Any())
+                {
+                    Log.WarnFormat("Items not found with search: {0}", string.Join(",", missingTitles));
+                }
             }
 
             return existingItems;

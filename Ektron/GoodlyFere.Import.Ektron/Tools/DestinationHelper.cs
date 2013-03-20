@@ -33,6 +33,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net;
 using Ektron.Cms.Common;
 using Ektron.Cms.Content;
 using GoodlyFere.Import.Ektron.Extensions;
@@ -53,6 +54,14 @@ namespace GoodlyFere.Import.Ektron.Tools
 
         #endregion
 
+        public static string EncodeTitle(string title)
+        {
+            return title
+                .Replace("&", WebUtility.HtmlEncode("&"))
+                .Replace("'", WebUtility.HtmlEncode("'"))
+                .Replace("/", WebUtility.HtmlEncode("/"));
+        }
+
         #region Methods
 
         internal static void BuildTitleAndPathGroups(DataTable data, ContentCriteria criteria)
@@ -61,11 +70,12 @@ namespace GoodlyFere.Import.Ektron.Tools
             {
                 CriteriaFilterGroup<ContentProperty> critGroup = new CriteriaFilterGroup<ContentProperty>();
                 critGroup.Condition = LogicalOperation.And;
+                string contentTitle = EncodeTitle(row["title"].ToString());
 
                 critGroup.AddFilter(
                     ContentProperty.Title,
                     CriteriaFilterOperator.EqualTo,
-                    row["title"].ToString());
+                    contentTitle);
 
                 critGroup.AddFilter(
                     ContentProperty.Path,

@@ -181,12 +181,26 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (!failOnFault
                     && fe.Message.Contains("The current user does not have permission to carry out this request"))
                 {
+                    row.LogContentWarn("had authentication error.  Re-authenticating then retrying.");
                     Authenticate();
                     DoUpdate(data, row, existingItem, failOnFault: true);
                 }
                 else
                 {
                     LogUpdateError(row, fe);
+                }
+            }
+            catch (CommunicationException ce)
+            {
+                if (!failOnFault)
+                {
+                    row.LogContentWarn("had communication error.  Waiting and then retrying.");
+                    Thread.Sleep(10000);
+                    DoUpdate(data, row, existingItem, failOnFault: true);
+                }
+                else
+                {
+                    LogUpdateError(row, ce);
                 }
             }
             catch (Exception ex)
