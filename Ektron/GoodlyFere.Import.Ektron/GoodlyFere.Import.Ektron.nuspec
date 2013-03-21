@@ -12,7 +12,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>An Ektron plugin for the GoodlyFere Import framework.</description>
     <releaseNotes>
-        Changed requirements in Destinations to folderPath instead of folderName.
+        Many bug fixes, performance fixes, multi-threading for Ektron updating and saving.
     </releaseNotes>
     <tags>data import ektron plugin goodlyfere</tags>
   </metadata>

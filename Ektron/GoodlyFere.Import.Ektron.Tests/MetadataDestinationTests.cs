@@ -120,6 +120,8 @@ namespace GoodlyFere.Import.Ektron.Tests
         {
             var table = new DataTable("test");
             table.Columns.Add(new DataColumn("contentId", typeof(long)));
+            table.Columns.Add(new DataColumn("folderPath", typeof(string)));
+            table.Columns.Add(new DataColumn("title", typeof(string)));
             table.Columns.Add(new DataColumn("Title", typeof(string)));
             table.Columns.Add(new DataColumn("Description", typeof(string)));
             table.Columns.Add(new DataColumn("Keywords", typeof(string)));
@@ -131,6 +133,7 @@ namespace GoodlyFere.Import.Ektron.Tests
             var table = GetValidSchemaTable();
             var row = table.NewRow();
             row["contentId"] = 0;
+            row["folderPath"] = EktronTestHelper.TestFolderPath;
             row["Title"] = "metadata title";
             row["Description"] = "meta data description";
             row["Keywords"] = "one, keyword, and, another";
