@@ -131,6 +131,11 @@ namespace GoodlyFere.Import.Ektron.Destination
             return -1;
         }
 
+        protected virtual ContentData GetNewContentDataObject()
+        {
+            return new ContentData();
+        }
+
         protected override void RowGroupSaveOrUpdate(List<DataRow> dataRows, List<ContentData> existingItems)
         {
             foreach (var row in dataRows)
@@ -166,7 +171,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 return;
             }
 
-            ContentData content = new ContentData();
+            ContentData content = GetNewContentDataObject();
             SetContentFields(row, content);
             content.FolderId = folderId;
 

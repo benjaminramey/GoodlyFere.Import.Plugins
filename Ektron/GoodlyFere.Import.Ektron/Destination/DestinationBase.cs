@@ -54,8 +54,8 @@ namespace GoodlyFere.Import.Ektron.Destination
     {
         #region Constants and Fields
 
-        private const int MaxGroupsInCriteria = 20;
         protected const int TimeoutWait = 30000;
+        private const int MaxGroupsInCriteria = 20;
         private static readonly ILog Log = LogManager.GetLogger<DestinationBase>();
         private readonly string _adminPassword;
         private readonly string _adminUserName;
@@ -182,6 +182,11 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
         }
 
+        protected virtual void DoAPIUpdateCall(ContentData existingItem)
+        {
+            ContentManager.Update(existingItem);
+        }
+
         protected void DoContentAdd(DataRow row, ContentData content, short timeouts = 0, bool failOnFault = false)
         {
             try
@@ -249,7 +254,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 if (HasAuthentication)
                 {
-                    ContentManager.Update(existingItem);
+                    DoAPIUpdateCall(existingItem);
                     row.LogContentInfo("updated successfully with id {0}.", existingItem.Id);
                 }
                 else

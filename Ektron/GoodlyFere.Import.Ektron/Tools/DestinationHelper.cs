@@ -46,14 +46,6 @@ namespace GoodlyFere.Import.Ektron.Tools
     {
         #region Public Methods
 
-        public static bool HasColumn(DataTable data, string columnName, Type columnType)
-        {
-            return data.Columns[columnName] != null
-                   && data.Columns[columnName].DataType == columnType;
-        }
-
-        #endregion
-
         public static string EncodeTitle(string title)
         {
             return title
@@ -61,6 +53,14 @@ namespace GoodlyFere.Import.Ektron.Tools
                 .Replace("'", WebUtility.HtmlEncode("'"))
                 .Replace("/", WebUtility.HtmlEncode("/"));
         }
+
+        public static bool HasColumn(DataTable data, string columnName, Type columnType)
+        {
+            return data.Columns[columnName] != null
+                   && data.Columns[columnName].DataType == columnType;
+        }
+
+        #endregion
 
         #region Methods
 
