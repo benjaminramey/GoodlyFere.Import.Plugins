@@ -55,7 +55,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         #region Constants and Fields
 
         private const int MaxGroupsInCriteria = 20;
-
+        protected const int TimeoutWait = 30000;
         private static readonly ILog Log = LogManager.GetLogger<DestinationBase>();
         private readonly string _adminPassword;
         private readonly string _adminUserName;
@@ -201,7 +201,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (timeouts < 10)
                 {
                     row.LogContentInfo("save timed out.  Trying again.");
-                    Thread.Sleep(1000);
+                    Thread.Sleep(TimeoutWait);
                     DoContentAdd(row, content, ++timeouts);
                 }
                 else
@@ -228,7 +228,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (!failOnFault)
                 {
                     row.LogContentWarn("had communication error.  Waiting and then retrying.");
-                    Thread.Sleep(10000);
+                    Thread.Sleep(TimeoutWait);
                     DoContentAdd(row, content, failOnFault: true);
                 }
                 else
@@ -262,7 +262,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (timeouts < 10)
                 {
                     row.LogContentInfo("update timed out.  Trying again.");
-                    Thread.Sleep(1000);
+                    Thread.Sleep(TimeoutWait);
                     DoContentUpdate(row, existingItem, ++timeouts);
                 }
                 else
@@ -281,6 +281,19 @@ namespace GoodlyFere.Import.Ektron.Destination
                 else
                 {
                     LogUpdateError(row, fe);
+                }
+            }
+            catch (CommunicationException ce)
+            {
+                if (!failOnFault)
+                {
+                    row.LogContentWarn("had communication error.  Waiting and then retrying.");
+                    Thread.Sleep(TimeoutWait);
+                    DoContentUpdate(row, existingItem, failOnFault: true);
+                }
+                else
+                {
+                    LogUpdateError(row, ce);
                 }
             }
             catch (Exception ex)

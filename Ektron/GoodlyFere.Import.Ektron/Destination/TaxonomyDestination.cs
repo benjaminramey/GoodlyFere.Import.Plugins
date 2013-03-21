@@ -168,7 +168,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (timeouts < 10)
                 {
                     row.LogContentInfo("update timed out.  Trying again.");
-                    Thread.Sleep(1000);
+                    Thread.Sleep(TimeoutWait);
                     DoUpdate(data, row, existingItem, ++timeouts);
                 }
                 else
@@ -195,7 +195,7 @@ namespace GoodlyFere.Import.Ektron.Destination
                 if (!failOnFault)
                 {
                     row.LogContentWarn("had communication error.  Waiting and then retrying.");
-                    Thread.Sleep(10000);
+                    Thread.Sleep(TimeoutWait);
                     DoUpdate(data, row, existingItem, failOnFault: true);
                 }
                 else
