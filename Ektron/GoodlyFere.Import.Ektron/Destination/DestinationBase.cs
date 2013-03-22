@@ -182,6 +182,11 @@ namespace GoodlyFere.Import.Ektron.Destination
             }
         }
 
+        protected virtual void DoAPIAddCall(ContentData content)
+        {
+            ContentManager.Add(content);
+        }
+
         protected virtual void DoAPIUpdateCall(ContentData existingItem)
         {
             ContentManager.Update(existingItem);
@@ -193,7 +198,7 @@ namespace GoodlyFere.Import.Ektron.Destination
             {
                 if (HasAuthentication)
                 {
-                    ContentManager.Add(content);
+                    DoAPIAddCall(content);
                     row.LogContentInfo("saved successfully with id {0}.", content.Id);
                 }
                 else
