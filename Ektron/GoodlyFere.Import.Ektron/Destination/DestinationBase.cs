@@ -342,17 +342,22 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected virtual void GetExistingContentFilters(ContentCriteria criteria)
         {
-            CriteriaFilterGroup<ContentProperty> group = new CriteriaFilterGroup<ContentProperty>();
-            group.Condition = LogicalOperation.Or;
+            CriteriaFilterGroup<ContentProperty> critGroup = new CriteriaFilterGroup<ContentProperty>();
+            critGroup.Condition = LogicalOperation.Or;
 
-            foreach (DataRow row in Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew()))
-            {
-                group.AddFilter(ContentProperty.Id, CriteriaFilterOperator.EqualTo, row["contentid"]);
-            }
+            var rowGroups = Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew())
+                             .Select((r, i) => new { Index = i, Row = r })
+                             .GroupBy(obj => Math.Truncate(obj.Index / 10.0))
+                             .Select(grp => grp.Select(v => v.Row).ToList());
 
-            if (group.Filters.Any())
+            foreach (var rowGroup in rowGroups)
             {
-                criteria.FilterGroups.Add(group);
+                foreach (DataRow row in rowGroup)
+                {
+                    critGroup.AddFilter(ContentProperty.Id, CriteriaFilterOperator.EqualTo, row["contentid"]);
+                }
+
+                criteria.FilterGroups.Add(critGroup);
             }
         }
 
