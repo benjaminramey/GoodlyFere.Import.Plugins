@@ -12,7 +12,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>An Ektron plugin for the GoodlyFere Import framework.</description>
     <releaseNotes>
-        Many bug fixes, performance fixes, multi-threading for Ektron updating and saving.
+        Fixes bug in DestinationBase for non-new rows when searching for existing items.
     </releaseNotes>
     <tags>data import ektron plugin goodlyfere</tags>
   </metadata>
