@@ -55,7 +55,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         #region Constants and Fields
 
         protected const int TimeoutWait = 30000;
-        private const int MaxGroupsInCriteria = 20;
+        private const int MaxFiltersInCriteria = 50;
         private static readonly ILog Log = LogManager.GetLogger<DestinationBase>();
         private readonly string _adminPassword;
         private readonly string _adminUserName;
@@ -342,9 +342,6 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         protected virtual void GetExistingContentFilters(ContentCriteria criteria)
         {
-            CriteriaFilterGroup<ContentProperty> critGroup = new CriteriaFilterGroup<ContentProperty>();
-            critGroup.Condition = LogicalOperation.Or;
-
             var rowGroups = Data.Rows.Cast<DataRow>().Where(dr => !dr.IsNew())
                              .Select((r, i) => new { Index = i, Row = r })
                              .GroupBy(obj => Math.Truncate(obj.Index / 10.0))
@@ -352,6 +349,9 @@ namespace GoodlyFere.Import.Ektron.Destination
 
             foreach (var rowGroup in rowGroups)
             {
+                CriteriaFilterGroup<ContentProperty> critGroup = new CriteriaFilterGroup<ContentProperty>();
+                critGroup.Condition = LogicalOperation.Or;
+
                 foreach (DataRow row in rowGroup)
                 {
                     critGroup.AddFilter(ContentProperty.Id, CriteriaFilterOperator.EqualTo, row["contentid"]);
@@ -431,28 +431,47 @@ namespace GoodlyFere.Import.Ektron.Destination
             GetExistingContentFilters(criteria);
 
             // remove groups with no filters, they mess up search
-            CriteriaFilterGroup<ContentProperty>[] groupsWithFilters =
-                criteria.FilterGroups.Where(fg => fg.Filters.Any()).ToArray();
+            List<CriteriaFilterGroup<ContentProperty>> groupsWithFilters =
+                criteria.FilterGroups.Where(fg => fg.Filters.Any()).ToList();
+            int numFilters = groupsWithFilters.SelectMany(g => g.Filters).Count();
 
             List<ContentData> contentList = new List<ContentData>();
-            if (groupsWithFilters.Count() > MaxGroupsInCriteria)
-            {
-                for (int i = 0; i < groupsWithFilters.Length / MaxGroupsInCriteria + 1; i++)
+            Action<List<CriteriaFilterGroup<ContentProperty>>> doSearch = groups =>
                 {
-                    var groups = groupsWithFilters.Skip(i * MaxGroupsInCriteria).Take(MaxGroupsInCriteria).ToArray();
-                    if (groups.Any())
+                    criteria.FilterGroups.Clear();
+                    criteria.FilterGroups.AddRange(groups);
+                    contentList.AddRange(ContentManager.GetList(criteria));
+                };
+
+            if (numFilters > MaxFiltersInCriteria)
+            {
+                var groups = new List<CriteriaFilterGroup<ContentProperty>>();
+                int currentFilterCount = 0;
+                foreach (var group in groupsWithFilters)
+                {
+                    if (currentFilterCount <= MaxFiltersInCriteria
+                        && ((currentFilterCount + group.Filters.Count) <= MaxFiltersInCriteria
+                              || groups.Count == 0))
                     {
-                        criteria.FilterGroups.Clear();
-                        criteria.FilterGroups.AddRange(groups);
-                        contentList.AddRange(ContentManager.GetList(criteria));
+                        currentFilterCount += group.Filters.Count;
+                        groups.Add(group);
+                        continue;
                     }
+
+                    doSearch(groups);
+                    currentFilterCount = group.Filters.Count;
+                    groups.Clear();
+                    groups.Add(group);
+                }
+
+                if (groups.Any())
+                {
+                    doSearch(groups);
                 }
             }
             else
             {
-                criteria.FilterGroups.Clear();
-                criteria.FilterGroups.AddRange(groupsWithFilters);
-                contentList.AddRange(ContentManager.GetList(criteria));
+                doSearch(groupsWithFilters);
             }
 
             return contentList;
