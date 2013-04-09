@@ -6,7 +6,7 @@ properties {
   $debug_build_dir = "$build_dir\bin\debug"
   $release_build_dir = "$build_dir\bin\release"
   $release_dir = "$build_base_dir\Release"
-  $sln_file = "$base_dir\CSV.sln"
+  $sln_file = "$base_dir\CSVPlugin.sln"
   $tools_dir = "$build_base_dir\Tools"
   $run_tests = $true
   $xunit_console = "$tools_dir\xunit.console.clr4.exe"
