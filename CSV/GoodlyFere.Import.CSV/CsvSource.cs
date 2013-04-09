@@ -12,7 +12,7 @@ using GoodlyFere.Import.Interfaces;
 
 #endregion
 
-namespace GoodlyFere.Import.Sources
+namespace GoodlyFere.Import.CSV
 {
     public class CsvSource : ISource
     {

@@ -5,12 +5,11 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
-using GoodlyFere.Import.Sources;
 using Xunit;
 
 #endregion
 
-namespace GoodlyFere.Import.Tests.SourceTests
+namespace GoodlyFere.Import.CSV.Tests.SourceTests
 {
     public class CsvSourceTests : IDisposable
     {

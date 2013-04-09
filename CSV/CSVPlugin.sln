@@ -5,6 +5,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodlyFere.Import.CSV", "Go
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{4CDC4CB6-8169-4DCB-9C87-70E358202A5D}"
 	ProjectSection(SolutionItems) = preProject
+		GoodlyFere.Import.CSV\GoodlyFere.Import.CSV.nuspec = GoodlyFere.Import.CSV\GoodlyFere.Import.CSV.nuspec
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
 	EndProjectSection
@@ -31,7 +32,6 @@ Global
 		{A5B7463E-1FDA-439B-8D71-6B8C968A2756}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A5B7463E-1FDA-439B-8D71-6B8C968A2756}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5B7463E-1FDA-439B-8D71-6B8C968A2756}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A5B7463E-1FDA-439B-8D71-6B8C968A2756}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
