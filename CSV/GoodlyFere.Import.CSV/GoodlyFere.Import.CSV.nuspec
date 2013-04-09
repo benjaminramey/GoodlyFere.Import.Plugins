@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package >
+    <metadata>
+        <id>GoodlyFere.Import.CSV</id>
+        <version>$version$</version>
+        <title>GoodlyFere Import CSV Plugin</title>
+        <authors>Ben Ramey</authors>
+        <owners>Ben Ramey</owners>
+        <copyright>Copyright 2013 Ben Ramey</copyright>
+        <licenseUrl>https://github.com/benjaminramey/GoodlyFere.Import.Plugins/blob/master/CSV/LICENSE.txt</licenseUrl>
+        <projectUrl>https://github.com/benjaminramey/GoodlyFere.Import.Plugins/tree/master/CSV</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A CSV plugin for the GoodlyFere Import framework.</description>
+        <releaseNotes>
+            Initial version, includes a simple CsvSource
+        </releaseNotes>
+        <tags>data import csv plugin goodlyfere</tags>
+    </metadata>
+</package>
