@@ -85,6 +85,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tools\FolderUtil.cs" />
     <Compile Include="Tools\Authenticator.cs" />
     <Compile Include="Destination\DestinationBase.cs" />
     <Compile Include="Destination\MetadataDestination.cs" />

@@ -35,9 +35,7 @@ using System.Linq;
 using System;
 using Common.Logging;
 using Ektron.Cms;
-using Ektron.Cms.Common;
 using Ektron.Cms.Content;
-using Ektron.Cms.Framework.Organization;
 using GoodlyFere.Import.Ektron.Extensions;
 using GoodlyFere.Import.Ektron.Tools;
 
@@ -50,8 +48,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         #region Constants and Fields
 
         private static readonly ILog Log = LogManager.GetLogger<ContentDestination>();
-        private readonly object _folderIdCacheLock = new object();
-        private readonly Dictionary<string, long> _folderIds;
+        private readonly FolderUtil _folderUtil;
 
         #endregion
 
@@ -60,7 +57,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         public ContentDestination(string ektronServicesUrl, string adminUserName, string adminPassword)
             : base(ektronServicesUrl, adminUserName, adminPassword)
         {
-            _folderIds = new Dictionary<string, long>();
+            _folderUtil = new FolderUtil();
         }
 
         #endregion
@@ -83,52 +80,11 @@ namespace GoodlyFere.Import.Ektron.Destination
 
         #region Methods
 
-        protected static FolderData GetFolderData(string folderPath)
-        {
-            Log.InfoFormat("Getting folder with path '{0}'", folderPath);
-
-            FolderManager fm = new FolderManager();
-            FolderCriteria folderCrit = new FolderCriteria();
-            folderCrit.AddFilter(
-                FolderProperty.FolderPath,
-                CriteriaFilterOperator.EqualTo,
-                folderPath);
-
-            FolderData folder = fm.GetList(folderCrit).FirstOrDefault();
-            return folder;
-        }
-
         protected override void GetExistingContentFilters(ContentCriteria criteria)
         {
             base.GetExistingContentFilters(criteria);
 
             DestinationHelper.BuildTitleAndPathGroups(Data, criteria);
-        }
-
-        protected long GetFolderId(DataRow row)
-        {
-            Log.InfoFormat("Getting folder id with path '{0}'", row["folderPath"]);
-
-            string folderPath = row["folderPath"].ToString();
-            lock (_folderIdCacheLock)
-            {
-                if (_folderIds.ContainsKey(folderPath))
-                {
-                    Log.InfoFormat("Folder id was cached: {0}", _folderIds[folderPath]);
-                    return _folderIds[folderPath];
-                }
-
-                var folder = GetFolderData(folderPath);
-                if (folder != null)
-                {
-                    _folderIds.Add(folderPath, folder.Id);
-                    Log.InfoFormat("Folder id was found and added to cache: {0}", folder.Id);
-                    return folder.Id;
-                }
-            }
-
-            Log.ErrorFormat("Did not find folder with path '{0}'", folderPath);
-            return -1;
         }
 
         protected virtual ContentData GetNewContentDataObject()
@@ -163,7 +119,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         protected virtual void SaveContent(DataRow row)
         {
             row.LogContentInfo("saving in folder '{0}'", row["folderPath"]);
-            long folderId = GetFolderId(row);
+            long folderId = _folderUtil.GetFolderId(row);
 
             if (folderId <= 0)
             {

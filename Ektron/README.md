@@ -3,6 +3,7 @@
 Ektron plugin for the GoodlyFere Import framework.
 
 ## Version History
+- (1.0.2.1) Refactored folder retrieval out of ContentDestination.
 - (1.0.2.0) Refactored authentication out of DestinationBase to Authenticator class
 - (1.0.1.2) Implements more intelligent existing content filter grouping
 - (1.0.1.1) Fixed bug in DestinationBase for non-new rows when searching for existing items.

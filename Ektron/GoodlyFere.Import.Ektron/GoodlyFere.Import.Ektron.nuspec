@@ -12,7 +12,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>An Ektron plugin for the GoodlyFere Import framework.</description>
     <releaseNotes>
-        Refactored authentication out of DestinationBase to Authenticator class.
+        Refactored folder retrieval out of ContentDestination.
     </releaseNotes>
     <tags>data import ektron plugin goodlyfere</tags>
   </metadata>
