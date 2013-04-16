@@ -57,11 +57,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         protected const int TimeoutWait = 30000;
         private const int MaxFiltersInCriteria = 50;
         private static readonly ILog Log = LogManager.GetLogger<DestinationBase>();
-        private readonly string _adminPassword;
-        private readonly string _adminUserName;
-        private readonly object _authTokenLock = new object();
-        private readonly object _authenticatingLock = new object();
-        private bool _authenticating;
+        private readonly Authenticator _authenticator;
 
         #endregion
 
@@ -71,17 +67,24 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             SetServicesPath(ektronServicesUrl);
 
-            _adminUserName = adminUserName;
-            _adminPassword = adminPassword;
-
-            Authenticate();
+            _authenticator = new Authenticator(adminUserName, adminPassword);
         }
 
         #endregion
 
         #region Properties
 
-        protected string AuthToken { get; set; }
+        protected string AuthToken
+        {
+            set
+            {
+                _authenticator.AuthToken = value;
+            }
+            get
+            {
+                return _authenticator.AuthToken;
+            }
+        }
 
         protected ContentManager ContentManager
         {
@@ -99,10 +102,7 @@ namespace GoodlyFere.Import.Ektron.Destination
         {
             get
             {
-                lock (_authTokenLock)
-                {
-                    return !string.IsNullOrWhiteSpace(AuthToken);
-                }
+                return _authenticator.HasAuthentication;
             }
         }
 
@@ -156,30 +156,9 @@ namespace GoodlyFere.Import.Ektron.Destination
                 ex.Message);
         }
 
-        protected void Authenticate()
+        public void Authenticate()
         {
-            lock (_authenticatingLock)
-            {
-                if (_authenticating)
-                {
-                    return;
-                }
-
-                _authenticating = true;
-            }
-
-            Log.InfoFormat("Authenticating with username: {0} and password: {1}", _adminUserName, _adminPassword);
-
-            lock (_authTokenLock)
-            {
-                UserManager um = new UserManager();
-                AuthToken = um.Authenticate(_adminUserName, _adminPassword);
-            }
-
-            lock (_authenticatingLock)
-            {
-                _authenticating = false;
-            }
+            _authenticator.Authenticate();
         }
 
         protected virtual void DoAPIAddCall(ContentData content)
