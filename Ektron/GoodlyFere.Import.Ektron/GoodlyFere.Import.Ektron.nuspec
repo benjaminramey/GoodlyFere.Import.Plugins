@@ -12,7 +12,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>An Ektron plugin for the GoodlyFere Import framework.</description>
     <releaseNotes>
-        Refactored folder retrieval out of ContentDestination.
+        Moved ThreadManager tool to GoodlyFere.Import
     </releaseNotes>
     <tags>data import ektron plugin goodlyfere</tags>
   </metadata>
